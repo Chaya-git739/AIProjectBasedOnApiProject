@@ -12,6 +12,7 @@ namespace WebApplication2.DAL
         public Task<WinnerModel> WinnerBYId(int userId);
         // פונקציה חדשה לשליפת כל הזוכים
         public  List<WinnerModel> GetAllWinners();
-        public Task<bool> IsGiftAlreadyWonAsync(int giftId);
+        public Task<bool> IsGiftAlreadyWonAsync(int giftId);Task<WinnerModel?> GetWinnerByGiftIdAsync(int giftId); 
+
 }
 }

@@ -4,24 +4,25 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using WebApplication2.DAL;
-using WebApplication2.Models;
 using WebApplication2.Models.DTO;
+using WebApplication2.Services;
 
 namespace WebApplication2.BLL
 {
     public class OrderServiceBLL : IOrderBLL
     {
         private readonly IOrderDal _orderDal;
-        private readonly IGiftDal _giftDal;
-        private readonly IWinnerDAL _winnerDal;
-        private readonly IMapper _mapper; // <-- Add this line
+        private readonly IMapper _mapper;
+        private readonly ITicketPurchaseService _ticketPurchaseService;
 
-        public OrderServiceBLL(IOrderDal orderDal, IGiftDal giftDal, IWinnerDAL winnerDal, IMapper mapper) // <-- Add IWinnerDAL to constructor
+        public OrderServiceBLL(
+            IOrderDal orderDal,
+            IMapper mapper,
+            ITicketPurchaseService ticketPurchaseService)
         {
-            _orderDal = orderDal;
-            _giftDal = giftDal;
-            _winnerDal = winnerDal;
-            _mapper = mapper; // <-- Assign mapper
+            _orderDal = orderDal ?? throw new ArgumentNullException(nameof(orderDal));
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+            _ticketPurchaseService = ticketPurchaseService ?? throw new ArgumentNullException(nameof(ticketPurchaseService));
         }
 
         public async Task<List<PurchaserDetailsDto>> GetPurchasersForGiftAsync(int giftId)
@@ -30,52 +31,9 @@ namespace WebApplication2.BLL
             return await _orderDal.GetPurchasersByGiftId(giftId);
         }
 
-        public async Task<int> PlaceOrderAsync(OrderDTO Dto)
+        public Task<int> PlaceOrderAsync(OrderDTO dto)
         {
-            // בדיקה שאף מתנה לא הוגרלה כבר
-            foreach (var itemDto in Dto.OrderItems)
-            {
-                bool isAlreadyWon = await _winnerDal.IsGiftAlreadyWonAsync(itemDto.GiftId);
-                if (isAlreadyWon)
-                {
-                    throw new BusinessException("לא ניתן לרכוש כרטיסים למתנה שכבר הוגרלה");
-                }
-            }
-
-            decimal totalSum = 0m;
-
-            var orderTickets = new List<OrderTicketModel>();
-
-            // שליפת כל המתנות בצורה אסינכרונית כדי לקבל מחירים עדכניים
-            var gifts = await _giftDal.GetAll();
-
-            foreach (var itemDto in Dto.OrderItems)
-            {
-                var gift = gifts.FirstOrDefault(g => g.Id == itemDto.GiftId);
-                if (gift != null)
-                {
-                    totalSum += gift.TicketPrice * itemDto.Quantity;
-
-                    orderTickets.Add(new OrderTicketModel
-                    {
-                        GiftId = gift.Id,
-                        Quantity = itemDto.Quantity
-                    });
-                }
-            }
-
-            var newOrder = new OrderModel
-            {
-                UserId = Dto.UserId,
-                OrderDate = DateTime.Now,
-                TotalAmount = (double)totalSum,
-                IsDraft = Dto.IsDraft,
-                OrderItems = orderTickets
-            };
-
-            // אם IOrderDal.AddOrder הוא סינכרוני – נשמור קריאה סינכרונית (אפשר לעדכן ל‑AddOrderAsync מאוחר יותר)
-            var orderId = await Task.Run(() => _orderDal.AddOrder(newOrder));
-            return orderId; // <-- Fixed: return int directly, not Task<int>
+            return _ticketPurchaseService.PlaceOrderAsync(dto);
         }
 
         public async Task<List<OrderDTO>> GetUserHistoryAsync(int userId)

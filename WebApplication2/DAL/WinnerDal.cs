@@ -121,5 +121,21 @@ namespace WebApplication2.DAL
                 throw new Exception();
             }
         }
+
+        public async Task<WinnerModel> GetWinnerByGiftIdAsync(int giftId)
+        {
+            try
+            {
+                return await _context.Winners
+                    .Include(w => w.User)
+                    .Include(w => w.Gift)
+                    .FirstOrDefaultAsync(w => w.GiftId == giftId);
+            }
+            catch
+            {
+                _logger.LogError("אירעה שגיאה תוך כדי שליפת זוכה עבור מתנה {GiftId}", giftId);
+                throw;
+            }
+        }
     }
 }

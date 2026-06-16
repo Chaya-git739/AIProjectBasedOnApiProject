@@ -4,6 +4,7 @@ using System;
 using System.Threading.Tasks;
 using WebApplication2.Models.DTO;
 using WebApplication2.BLL;
+using WebApplication2.Services;
 
 namespace WebApplication2.Controllers
 {
@@ -12,10 +13,12 @@ namespace WebApplication2.Controllers
     public class GiftController : ControllerBase
     {
         private readonly IGiftBLL _giftBll;
+        private readonly ISalesSummaryCacheService _salesSummaryCache;
 
-        public GiftController(IGiftBLL giftBll)
+        public GiftController(IGiftBLL giftBll, ISalesSummaryCacheService salesSummaryCache)
         {
             _giftBll = giftBll;
+            _salesSummaryCache = salesSummaryCache;
         }
 
         [HttpGet]
@@ -93,7 +96,7 @@ namespace WebApplication2.Controllers
         [Authorize(Roles = "Manager")]
         public async Task<IActionResult> GetSalesSummary()
         {
-            var summary = await _giftBll.GetSalesSummaryAsync();
+            var summary = await _salesSummaryCache.GetSalesSummaryAsync();
             return Ok(summary);
         }
 

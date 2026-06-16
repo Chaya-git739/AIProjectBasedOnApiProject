@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using WebApplication2.DAL;
 using WebApplication2.Models.DTO;
@@ -12,10 +13,11 @@ namespace WebApplication2.BLL
         private readonly IOrderDal _orderDal;
         private readonly ILogger<GiftServiceBLL> _logger;
 
-        public GiftServiceBLL(IGiftDal giftDal, IOrderDal orderDal ,ILogger<GiftServiceBLL>logger)
+        public GiftServiceBLL(IGiftDal giftDal, IOrderDal orderDal, ILogger<GiftServiceBLL> logger)
         {
             _giftDal = giftDal ?? throw new ArgumentNullException(nameof(giftDal));
             _orderDal = orderDal ?? throw new ArgumentNullException(nameof(orderDal));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<List<GiftDTO>> GetAllGiftsAsync()
@@ -69,11 +71,17 @@ namespace WebApplication2.BLL
 
         public async Task DeleteGiftAsync(int id)
         {
+            // בדיקה 1: האם קיימות רכישות מאושרות (confirmed orders)?
             bool hasConfirmedOrders = await _orderDal.HasConfirmedOrdersForGift(id);
-
             if (hasConfirmedOrders)
                 throw new BusinessException("לא ניתן למחוק את המתנה כיוון שכבר יש עבורה רכישות מאושרות שלא ניתן להפר.");
 
+            // בדיקה 2: האם קיימות הזמנות טיוטה (draft orders) עם מתנה זו?
+            bool hasDraftOrders = await _orderDal.HasOrdersForGift(id);
+            if (hasDraftOrders)
+                throw new BusinessException("לא ניתן למחוק את המתנה כיוון שיש הזמנות טיוטה המכילות אותה.");
+
+            // מחיקה רכה (Soft Delete)
             await _giftDal.Delete(id);
         }
 
@@ -82,13 +90,14 @@ namespace WebApplication2.BLL
             var totalRevenue = await _giftDal.GetTotalSalesAsync();
             var totalOrders = await _orderDal.GetConfirmedOrdersCountAsync();
             var totalTickets = await _orderDal.GetTotalTicketsSoldAsync();
-            
+            var salesPerGift = await _giftDal.GetSalesPerGiftAsync();
+
             return new SalesSummaryDto
             {
                 TotalRevenue = totalRevenue,
                 TotalOrders = totalOrders,
                 TotalTicketsSold = totalTickets,
-                SalesPerGift = new List<GiftSalesDto>()
+                SalesPerGift = salesPerGift
             };
         }
 

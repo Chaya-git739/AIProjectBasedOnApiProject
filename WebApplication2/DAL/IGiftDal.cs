@@ -14,6 +14,7 @@ namespace WebApplication2.DAL
         Task Update(GiftDTO gift);
         Task Delete(int id);
         Task<decimal> GetTotalSalesAsync();
+        Task<List<GiftSalesDto>> GetSalesPerGiftAsync();
         Task<List<GiftWinnerDto>> GetGiftsWithWinnersAsync();
     }
 }

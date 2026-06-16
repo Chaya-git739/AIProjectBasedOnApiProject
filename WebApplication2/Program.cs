@@ -10,6 +10,8 @@ using AutoMapper; // מייבא AutoMapper
 using WebApplication2.Extensions; // מייבא Extension Methods עבור Middlewares
 using System.Text.Json.Serialization; // מייבא JsonNamingPolicy
 using Microsoft.Extensions.Caching.StackExchangeRedis;
+using StackExchange.Redis;
+using WebApplication2.Services;
 
 // -----------------------------
 // Program.cs – תמצית ותפקיד הקובץ
@@ -126,6 +128,24 @@ builder.Services.AddScoped<IUserBll, UserServiceBLL>();
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<IEmailService, EmailService>();
 
+var redisConnection = builder.Configuration.GetValue<string>("Redis:Connection") ?? "redis:6379";
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = redisConnection;
+    options.InstanceName = "MyApi_";
+});
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    return ConnectionMultiplexer.Connect(redisConnection);
+});
+
+builder.Services.AddSingleton<IRedisInventoryService, RedisInventoryService>();
+// SalesSummaryCacheService depends on IGiftBLL (scoped). Use scoped lifetime to avoid captive dependency issues.
+builder.Services.AddScoped<ISalesSummaryCacheService, SalesSummaryCacheService>();
+builder.Services.AddScoped<ITicketPurchaseService, TicketPurchaseService>();
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -133,14 +153,6 @@ builder.Services.AddControllers()
     });
 
 builder.Services.AddRazorPages();
-// הוספת שירות ה-Redis לפרויקט
-builder.Services.AddStackExchangeRedisCache(options =>
-{
-    // אנחנו אומרים לו לחפש שרת בשם "redis" (כמו שקראנו לו ב-Docker Compose)
-    options.Configuration = "redis:6379"; 
-    // שם סכמה כללי כדי שלא יתערבב עם אפליקציות אחרות
-    options.InstanceName = "MyApi_"; 
-});
 
 // הוספת CORS לאנגולר
 builder.Services.AddCors(options =>

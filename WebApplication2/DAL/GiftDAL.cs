@@ -178,6 +178,20 @@ namespace WebApplication2.DAL
                 .SumAsync(o => (decimal)o.TotalAmount);
         }
 
+        public async Task<List<GiftSalesDto>> GetSalesPerGiftAsync()
+        {
+            return await _context.OrderTicket
+                .Where(ot => ot.Order.IsDraft == false)
+                .GroupBy(ot => new { ot.GiftId, ot.Gift.Name, ot.Gift.TicketPrice })
+                .Select(g => new GiftSalesDto
+                {
+                    GiftName = g.Key.Name,
+                    PurchaseCount = g.Sum(ot => ot.Quantity),
+                    RevenueFromGift = g.Sum(ot => ot.Quantity * g.Key.TicketPrice)
+                })
+                .ToListAsync();
+        }
+
         public async Task<List<GiftWinnerDto>> GetGiftsWithWinnersAsync()
         {
             return await _context.Gifts

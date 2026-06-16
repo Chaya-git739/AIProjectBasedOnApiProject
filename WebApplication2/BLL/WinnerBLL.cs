@@ -22,7 +22,7 @@ namespace WebApplication2.BLL
         }
         public async Task DeleteWinner(int winnerId) // מוסיף זוכה חדש
         {
-            _winnerDal.DeleteWinner(winnerId);
+           await _winnerDal.DeleteWinner(winnerId);
         }
         public async Task AddWinner(WinnerModel winner) // מוחק זוכה לפי מזהה משתמש
         {

@@ -10,10 +10,12 @@ namespace WebApplication2.BLL // BLL namespace
     public class UserServiceBLL : IUserBll // Implementing the BLL interface
     {
         private readonly IUserDal _userDal; // Dependency on DAL
+        private readonly IOrderDal _orderDal; // Dependency on Order DAL for validation
 
-        public UserServiceBLL(IUserDal userDal) // Constructor receiving DAL
+        public UserServiceBLL(IUserDal userDal, IOrderDal orderDal = null) // Constructor receiving DAL
         {
             _userDal = userDal; // Storing DAL in field
+            _orderDal = orderDal; // Storing Order DAL for validation
         }
 
         public async Task AddUser(UserDto userDto) // Make method async
@@ -91,6 +93,22 @@ namespace WebApplication2.BLL // BLL namespace
         {
             // מאפשר אותיות בכל שפה, רווחים ותווים מיוחדים נפוצים
             return !string.IsNullOrEmpty(name) && name.All(c => char.IsLetter(c) || char.IsWhiteSpace(c) || c == '\'' || c == '-');
+        }
+
+        public async Task DeleteUserAsync(int userId)
+        {
+            // בדיקה: האם למשתמש זה יש הזמנות מאושרות?
+            if (_orderDal != null)
+            {
+                bool hasConfirmedOrders = await _orderDal.HasConfirmedOrdersForUserAsync(userId);
+                if (hasConfirmedOrders)
+                {
+                    throw new BusinessException("לא ניתן למחוק את המשתמש כיוון שיש לו הזמנות מאושרות בהיסטוריה.");
+                }
+            }
+
+            // מחיקה רכה (Soft Delete)
+            await _userDal.Delete(userId);
         }
     }
 }

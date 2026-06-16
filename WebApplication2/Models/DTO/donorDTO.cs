@@ -7,7 +7,7 @@ namespace WebApplication2.Models.DTO
     /// </summary>
     public class DonorDTO
     {
-        /// <summary>מזהה ייחודי של התורם</summary>
+       
         public int? Id { get; set; }
         
         /// <summary>שם התורם</summary>

@@ -87,6 +87,15 @@ namespace WebApplication2.DAL
                 .AnyAsync(t => t.GiftId == giftId && t.Order.IsDraft == false);
         }
 
+        /// <summary>
+        /// בדוק אם למשתמש קיימות הזמנות מאושרות (לא טיוטה)
+        /// </summary>
+        public async Task<bool> HasConfirmedOrdersForUserAsync(int userId)
+        {
+            return await _context.Orders
+                .AnyAsync(o => o.UserId == userId && o.IsDraft == false);
+        }
+
         public async Task<bool> ConfirmOrderAsync(int orderId)
         {
             var order = await _context.Orders.FindAsync(orderId);
@@ -99,7 +108,7 @@ namespace WebApplication2.DAL
             return false;
         }
 
-        public async Task<OrderModel> GetOrderByIdAsync(int orderId)
+        public async Task<OrderModel>? GetOrderByIdAsync(int orderId)
         {
             return await _context.Orders
                 .Include(o => o.OrderItems)
@@ -143,6 +152,20 @@ namespace WebApplication2.DAL
             
             _context.OrderTicket.Add(orderItem);
             await _context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Get raffle pool for a gift (UserId and Quantity pairs for confirmed orders only)
+        /// </summary>
+        public async Task<List<(int UserId, int Quantity)>> GetRafflePoolByGiftIdAsync(int giftId)
+        {
+            return await _context.OrderTicket
+                .AsNoTracking()
+                .Where(ot => ot.GiftId == giftId && ot.Order.IsDraft == false)
+                .Select(ot => new { ot.Order.UserId, ot.Quantity })
+                .GroupBy(x => x.UserId)
+                .Select(g => new ValueTuple<int, int>(g.Key, g.Sum(x => x.Quantity)))
+                .ToListAsync();
         }
     }
 }

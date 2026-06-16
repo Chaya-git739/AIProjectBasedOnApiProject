@@ -36,10 +36,10 @@ namespace WebApplication2.DAL // מרחב שמות ל-DAL
                 // Unique index on Email
                 b.HasIndex(u => u.Email).IsUnique();
 
-                // Map Role enum to string column, limit length for safety
+                // Map Role enum to string column
                 b.Property(u => u.Role)
                  .HasConversion(userRoleConverter)
-                 .HasMaxLength(50)
+                 .HasColumnType("nvarchar(50)")
                  .IsRequired();
 
                 // Global query filter for soft delete
@@ -83,11 +83,26 @@ namespace WebApplication2.DAL // מרחב שמות ל-DAL
 
                 b.HasQueryFilter(g => !g.IsDeleted);
             });
+            // --- Order -> User relationship (עם הגנה על חוסר עקביות נתונים) ---
+            modelBuilder.Entity<OrderModel>()
+                .HasOne(o => o.User)
+                .WithMany()
+                .HasForeignKey(o => o.UserId)
+                .OnDelete(DeleteBehavior.Restrict); // מניעת מחיקת משתמש אם קיימות הזמנות
+
             // --- OrderTicket / Order / Winner navigations and other entity config kept as before ---
             modelBuilder.Entity<OrderTicketModel>() // קשר OrderItem -> Order
                 .HasOne(oi => oi.Order) // לכל פריט יש הזמנה
                 .WithMany(o => o.OrderItems) // להזמנה יש פריטים רבים
-                .HasForeignKey(oi => oi.OrderId); // מפתח זר
+                .HasForeignKey(oi => oi.OrderId)
+                .OnDelete(DeleteBehavior.Cascade); // מחיקת פריטים כשמוחקים הזמנה
+
+            // --- OrderTicket -> Gift relationship (עם הגנה על חוסר עקביות נתונים) ---
+            modelBuilder.Entity<OrderTicketModel>()
+                .HasOne(oi => oi.Gift)
+                .WithMany()
+                .HasForeignKey(oi => oi.GiftId)
+                .OnDelete(DeleteBehavior.Restrict); // מניעת מחיקת מתנה אם קיימת בהזמנה
 
             modelBuilder.Entity<WinnerModel>().HasKey(w => w.Id);
 
