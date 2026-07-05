@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   api:
     build: 
@@ -9,8 +11,8 @@ services:
       - sqlserver
       - redis
     environment:
-      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=ProductsDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True
-      - Redis_ConnectionString=redis:6379
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=MyStoreDatabase;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True
+      - Redis__Connection=redis:6379
 
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest

@@ -8,7 +8,6 @@ namespace WebApplication2.BLL
     {
         private readonly IWinnerDAL _winnerDal;
         private readonly IOrderDal _orderDal;
-        private readonly IUserDal _userDal;
         private readonly IGiftDal _giftDal;
         private readonly IEmailService _emailService;
         private readonly ILogger<RaffleSarviceBLL> _logger;
@@ -16,14 +15,12 @@ namespace WebApplication2.BLL
         public RaffleSarviceBLL(
             IWinnerDAL winnerDal,
             IOrderDal orderDal,
-            IUserDal userDal,
             IGiftDal giftDal,
             IEmailService emailService,
             ILogger<RaffleSarviceBLL> logger)
         {
             _winnerDal = winnerDal ?? throw new ArgumentNullException(nameof(winnerDal));
             _orderDal = orderDal ?? throw new ArgumentNullException(nameof(orderDal));
-            _userDal = userDal ?? throw new ArgumentNullException(nameof(userDal));
             _giftDal = giftDal ?? throw new ArgumentNullException(nameof(giftDal));
             _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

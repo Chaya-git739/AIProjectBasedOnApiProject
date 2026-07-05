@@ -114,17 +114,6 @@ builder.Services.AddScoped<IWinnerDAL, WinnerDal>(provider =>
     return new WinnerDal(context, mapper, logger);
 });
 
-// רישום UserDAL מתוקן (ללא קונפליקטים)
-builder.Services.AddScoped<IUserDal, UserDAL>(provider =>
-{
-    var context = provider.GetRequiredService<StoreContext>();
-    var mapper = provider.GetRequiredService<IMapper>();
-    var logger = provider.GetRequiredService<ILogger<UserDAL>>();
-
-    return new UserDAL(context, mapper, logger);
-});
-
-builder.Services.AddScoped<IUserBll, UserServiceBLL>();
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<IEmailService, EmailService>();
 
