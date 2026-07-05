@@ -52,6 +52,7 @@ For any requested migration slice, decompose it into:
    - What moves now
    - What stays in the monolith for the moment
    - Which interfaces or abstractions must be introduced first
+   - Whether the monolith should remain on its existing implementation until the extracted service is independently validated before any call-site swap
 
 4. **Risks**
    - Cross-service coupling

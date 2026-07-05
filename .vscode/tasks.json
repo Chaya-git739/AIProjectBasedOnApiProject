@@ -1,0 +1,12 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "build-catalog-service",
+			"type": "shell",
+			"command": "dotnet build CatalogService/CatalogService.csproj",
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}

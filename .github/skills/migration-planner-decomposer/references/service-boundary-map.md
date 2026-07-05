@@ -71,6 +71,7 @@ Likely source files:
 - Shared entity models are not service contracts.
 - A service may expose only the DTOs or events required by consumers.
 - Preserve existing endpoint behavior, DTO shape, and token/claim contents unless a contract change is explicitly planned and verified.
+- Keep the monolith on its current implementation until the extracted service is independently built and verified; only then should old monolith call sites be swapped to the new service behind the same contract.
 
 ## First implementation slice
 
