@@ -86,15 +86,21 @@ namespace OrderService.Controllers
             }
         }
 
-        [HttpGet("user/history/{userId}")]
-        public async Task<IActionResult> GetUserOrderHistory(int userId)
+        [HttpGet("user/history")]
+        public async Task<IActionResult> GetUserOrderHistory()
         {
             try
             {
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId) || userId <= 0)
+                {
+                    return Unauthorized("משתמש לא מזוהה או לא חוקי");
+                }
+
                 var orders = await _orderBll.GetUserHistoryAsync(userId);
                 if (orders == null || orders.Count == 0)
                 {
-                    return NotFound("לא נמצאו הזמנות עבור משתמש זה");
+                    return NotFound("לא נמצאו הזמנות עבור המשתמש הנוכחי");
                 }
                 return Ok(orders);
             }
@@ -123,7 +129,7 @@ namespace OrderService.Controllers
         }
 
         [HttpPost("{orderId}/add-item")]
-        [AllowAnonymous]
+        [Authorize]
         public async Task<IActionResult> AddItemToOrder(int orderId, [FromBody] AddItemRequest request)
         {
             try

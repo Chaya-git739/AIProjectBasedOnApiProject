@@ -11,6 +11,7 @@ namespace OrderService.Data
 
         public DbSet<OrderModel> Orders { get; set; } = null!;
         public DbSet<OrderTicketModel> OrderTickets { get; set; } = null!;
+        public DbSet<WinnerModel> Winners { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -29,6 +30,14 @@ namespace OrderService.Data
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Quantity).IsRequired();
                 entity.Property(e => e.GiftId).IsRequired();
+            });
+
+            modelBuilder.Entity<WinnerModel>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.GiftId).IsRequired();
+                entity.Property(e => e.UserId).IsRequired();
+                entity.Property(e => e.CreatedAt).IsRequired();
             });
         }
     }

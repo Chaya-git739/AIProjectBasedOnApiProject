@@ -1,25 +1,28 @@
+using OrderService.Models;
+
 namespace OrderService.Services
 {
     public class WinnerService : IWinnerService
     {
-        private static readonly List<object> Winners = new();
+        private readonly IWinnerRepository _winnerRepository;
 
-        public Task<object> CreateWinnerAsync(int giftId, int userId)
+        public WinnerService(IWinnerRepository winnerRepository)
         {
-            var winner = new
+            _winnerRepository = winnerRepository;
+        }
+
+        public Task<WinnerModel> CreateWinnerAsync(int giftId, int userId)
+        {
+            var winner = new WinnerModel
             {
-                giftId,
-                userId,
-                message = "זוכה נשמר"
+                GiftId = giftId,
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow
             };
-
-            Winners.Add(winner);
-            return Task.FromResult<object>(winner);
+            return _winnerRepository.AddWinnerAsync(winner);
         }
 
-        public Task<List<object>> GetWinnersAsync()
-        {
-            return Task.FromResult(Winners.ToList());
-        }
+        public Task<List<WinnerModel>> GetWinnersAsync() =>
+            _winnerRepository.GetAllWinnersAsync();
     }
 }

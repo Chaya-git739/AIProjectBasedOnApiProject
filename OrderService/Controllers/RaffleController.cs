@@ -19,24 +19,11 @@ namespace OrderService.Controllers
         [HttpPost("run/{giftId}")]
         public async Task<IActionResult> RunRaffle(int giftId)
         {
-            try
-            {
-                var winner = await _raffleService.RunRaffleAsync(giftId);
-                if (winner == null)
-                {
-                    return BadRequest(new { message = "אין כרטיסים למתנה זו" });
-                }
+            var result = await _raffleService.RunRaffleAsync(giftId);
+            if (result == null)
+                return BadRequest(new { message = "אין כרטיסים למתנה זו" });
 
-                return Ok(new
-                {
-                    message = "הגרלה בוצעה בהצלחה",
-                    winner = winner
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { error = ex.Message });
-            }
+            return Ok(new { message = "הגרלה בוצעה בהצלחה", winner = result });
         }
     }
 }

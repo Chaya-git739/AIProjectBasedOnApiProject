@@ -6,8 +6,6 @@ namespace OrderService.Models.DTO
     {
         public int Id { get; set; }
         public int UserId { get; set; }
-        public string? UserName { get; set; }
-        public string? UserEmail { get; set; }
         public DateTime OrderDate { get; set; }
         public bool IsDraft { get; set; }
         public double TotalAmount { get; set; }
@@ -21,8 +19,6 @@ namespace OrderService.Models.DTO
     {
         [Range(1, int.MaxValue, ErrorMessage = "GiftId חייב להיות גדול מאפס")]
         public int GiftId { get; set; }
-
-        public string? GiftName { get; set; }
 
         [Range(1, int.MaxValue, ErrorMessage = "Quantity חייב להיות גדול מאפס")]
         public int Quantity { get; set; } = 1;

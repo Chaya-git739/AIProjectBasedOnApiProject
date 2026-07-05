@@ -66,19 +66,26 @@ namespace OrderService.Services
         public Task<bool> RemoveItemAsync(int orderId, int giftId)
         {
             var order = Orders.FirstOrDefault(o => o.Id == orderId);
-            if (order == null)
-            {
-                return Task.FromResult(false);
-            }
+            if (order == null) return Task.FromResult(false);
 
             var item = order.OrderItems.FirstOrDefault(i => i.GiftId == giftId);
-            if (item == null)
-            {
-                return Task.FromResult(false);
-            }
+            if (item == null) return Task.FromResult(false);
 
             order.OrderItems.Remove(item);
             return Task.FromResult(true);
+        }
+
+        public Task<List<(int UserId, int Quantity)>> GetRafflePoolAsync(int giftId)
+        {
+            var pool = Orders
+                .Where(o => !o.IsDraft && o.OrderItems.Any(i => i.GiftId == giftId))
+                .SelectMany(o => o.OrderItems
+                    .Where(i => i.GiftId == giftId)
+                    .Select(i => new { o.UserId, i.Quantity }))
+                .GroupBy(x => x.UserId)
+                .Select(g => (g.Key, g.Sum(x => x.Quantity)))
+                .ToList();
+            return Task.FromResult(pool);
         }
     }
 }

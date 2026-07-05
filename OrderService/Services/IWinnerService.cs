@@ -1,8 +1,10 @@
+using OrderService.Models;
+
 namespace OrderService.Services
 {
     public interface IWinnerService
     {
-        Task<object> CreateWinnerAsync(int giftId, int userId);
-        Task<List<object>> GetWinnersAsync();
+        Task<WinnerModel> CreateWinnerAsync(int giftId, int userId);
+        Task<List<WinnerModel>> GetWinnersAsync();
     }
 }

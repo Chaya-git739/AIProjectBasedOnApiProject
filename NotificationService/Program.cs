@@ -1,7 +1,11 @@
 using NotificationService.Services;
 using Microsoft.OpenApi.Models;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var redisConnection = builder.Configuration["Redis:Connection"] ?? "localhost:6379";
+builder.Services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConnection));
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

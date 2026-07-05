@@ -85,20 +85,27 @@ namespace OrderService.Services
                 .Include(o => o.OrderItems)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
 
-            if (order == null)
-            {
-                return false;
-            }
+            if (order == null) return false;
 
             var item = order.OrderItems.FirstOrDefault(i => i.GiftId == giftId);
-            if (item == null)
-            {
-                return false;
-            }
+            if (item == null) return false;
 
             order.OrderItems.Remove(item);
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<List<(int UserId, int Quantity)>> GetRafflePoolAsync(int giftId)
+        {
+            return await _context.Orders
+                .AsNoTracking()
+                .Where(o => !o.IsDraft && o.OrderItems.Any(i => i.GiftId == giftId))
+                .SelectMany(o => o.OrderItems
+                    .Where(i => i.GiftId == giftId)
+                    .Select(i => new { o.UserId, i.Quantity }))
+                .GroupBy(x => x.UserId)
+                .Select(g => new ValueTuple<int, int>(g.Key, g.Sum(x => x.Quantity)))
+                .ToListAsync();
         }
     }
 }

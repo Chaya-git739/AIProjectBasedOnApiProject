@@ -24,6 +24,7 @@ services:
       - sqlserver
     environment:
       - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=AuthDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True
+      - Jwt__SecretKey=YourSuperSecretKeyHere1234567890!
 
   orderservice:
     build:
@@ -33,8 +34,40 @@ services:
       - "5002:80"
     depends_on:
       - sqlserver
+      - notificationservice
     environment:
-      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=OrdersDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True
+      - ConnectionStrings__OrderConnection=Server=sqlserver;Database=OrdersDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True
+      - Services__NotificationService=http://notificationservice:80
+      - Services__CatalogService=http://catalogservice:80
+      - Jwt__SecretKey=YourSuperSecretKeyHere1234567890!
+
+  catalogservice:
+    build:
+      context: ./CatalogService
+      dockerfile: Dockerfile
+    ports:
+      - "5003:80"
+    depends_on:
+      - sqlserver
+    environment:
+      - ConnectionStrings__CatalogConnection=Server=sqlserver;Database=CatalogDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True
+      - Jwt__SecretKey=YourSuperSecretKeyHere1234567890!
+
+  notificationservice:
+    build:
+      context: ./NotificationService
+      dockerfile: Dockerfile
+    ports:
+      - "5004:80"
+    depends_on:
+      - redis
+    environment:
+      - Redis__Connection=redis:6379
+      - EmailSettings__SmtpServer=smtp.gmail.com
+      - EmailSettings__SmtpPort=587
+      - EmailSettings__SenderEmail=d0583215865@gmail.com
+      - EmailSettings__SenderPassword=csgg dvlj kxov dofe
+      - EmailSettings__SenderName=מערכת ההגרלות
 
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest

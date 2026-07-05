@@ -6,10 +6,12 @@ namespace OrderService.Services
     public class OrderService : IOrderApplicationService
     {
         private readonly IOrderRepository _orderRepository;
+        private readonly ICatalogServiceClient _catalogClient;
 
-        public OrderService(IOrderRepository orderRepository)
+        public OrderService(IOrderRepository orderRepository, ICatalogServiceClient catalogClient)
         {
             _orderRepository = orderRepository;
+            _catalogClient = catalogClient;
         }
 
         public async Task<int> PlaceOrderAsync(OrderDTO dto)
@@ -45,11 +47,14 @@ namespace OrderService.Services
 
         public async Task<List<PurchaserDetailsDto>> GetPurchasersForGiftAsync(int giftId)
         {
+            var gift = await _catalogClient.GetGiftByIdAsync(giftId);
+            var giftName = gift?.Name ?? $"Gift {giftId}";
+
             var orders = await _orderRepository.GetAllOrdersAsync();
             return orders
                 .SelectMany(o => o.OrderItems.Where(i => i.GiftId == giftId).Select(i => new PurchaserDetailsDto
                 {
-                    CustomerName = "Unknown",
+                    CustomerName = giftName,
                     Email = string.Empty,
                     TicketsCount = i.Quantity
                 }))

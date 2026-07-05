@@ -11,5 +11,6 @@ namespace OrderService.Services
         Task<bool> ConfirmOrderAsync(int orderId);
         Task AddItemToOrderAsync(int orderId, int giftId, int quantity);
         Task<bool> RemoveItemAsync(int orderId, int giftId);
+        Task<List<(int UserId, int Quantity)>> GetRafflePoolAsync(int giftId);
     }
 }

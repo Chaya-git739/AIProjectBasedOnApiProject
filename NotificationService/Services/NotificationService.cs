@@ -2,12 +2,27 @@ namespace NotificationService.Services
 {
     public class NotificationService : INotificationService
     {
-        public Task<bool> SendAsync(string to, string subject, string message)
+        private readonly IEmailNotificationService _emailService;
+        private readonly ILogger<NotificationService> _logger;
+
+        public NotificationService(IEmailNotificationService emailService, ILogger<NotificationService> logger)
         {
-            // Placeholder for the first extraction slice.
-            // Keeps the service isolated and safe while the old app remains unchanged.
-            Console.WriteLine($"Notification sent to {to}: {subject}");
-            return Task.FromResult(true);
+            _emailService = emailService;
+            _logger = logger;
+        }
+
+        public async Task<bool> SendAsync(string to, string subject, string message)
+        {
+            try
+            {
+                await _emailService.SendWinnerNotificationAsync(to, to, message);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send notification to {To}", to);
+                return false;
+            }
         }
     }
 }
