@@ -97,3 +97,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  bffservice:
+    build:
+      context: ./BffService
+      dockerfile: Dockerfile
+    ports:
+      - "5010:80"
+    depends_on:
+      - orderservice
+      - catalogservice
+    environment:
+      - Services__OrderService=http://orderservice:80
+      - Services__CatalogService=http://catalogservice:80

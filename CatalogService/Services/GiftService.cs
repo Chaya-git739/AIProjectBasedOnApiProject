@@ -29,6 +29,12 @@ namespace CatalogService.Services
             return _mapper.Map<List<GiftDto>>(gifts);
         }
 
+        public async Task<GiftDto?> GetByIdAsync(int id)
+        {
+            var gift = await _giftRepository.GetByIdAsync(id);
+            return gift == null ? null : _mapper.Map<GiftDto>(gift);
+        }
+
         public async Task<GiftDto> AddAsync(GiftDto gift)
         {
             if (string.IsNullOrWhiteSpace(gift.Name) || string.IsNullOrWhiteSpace(gift.Category) || string.IsNullOrWhiteSpace(gift.DonorName))

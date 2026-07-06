@@ -5,6 +5,7 @@ namespace OrderService.Services
     public interface IOrderApplicationService
     {
         Task<int> PlaceOrderAsync(OrderDTO dto);
+        Task<OrderDetailsSourceDto?> GetOrderByIdAsync(int orderId);
         Task<List<PurchaserDetailsDto>> GetPurchasersForGiftAsync(int giftId);
         Task<List<OrderDTO>> GetUserHistoryAsync(int userId);
         Task<List<OrderDTO>> GetAllOrdersAsync();

@@ -15,6 +15,13 @@ namespace CatalogService.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll() => Ok(await _service.GetAllAsync());
 
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var gift = await _service.GetByIdAsync(id);
+            return gift == null ? NotFound() : Ok(gift);
+        }
+
         [HttpPost]
         [Authorize(Roles = "Manager")]
         public async Task<IActionResult> Create([FromBody] GiftDto gift) => Ok(await _service.AddAsync(gift));

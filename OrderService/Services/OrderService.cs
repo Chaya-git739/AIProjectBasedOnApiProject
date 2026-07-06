@@ -45,6 +45,28 @@ namespace OrderService.Services
             return await _orderRepository.AddOrderAsync(order);
         }
 
+        public async Task<OrderDetailsSourceDto?> GetOrderByIdAsync(int orderId)
+        {
+            var order = await _orderRepository.GetOrderByIdAsync(orderId);
+            if (order == null)
+            {
+                return null;
+            }
+
+            return new OrderDetailsSourceDto
+            {
+                Id = order.Id,
+                UserId = order.UserId,
+                OrderDate = order.OrderDate,
+                TotalAmount = order.TotalAmount,
+                OrderItems = order.OrderItems.Select(i => new OrderItemDTO
+                {
+                    GiftId = i.GiftId,
+                    Quantity = i.Quantity
+                }).ToList()
+            };
+        }
+
         public async Task<List<PurchaserDetailsDto>> GetPurchasersForGiftAsync(int giftId)
         {
             var gift = await _catalogClient.GetGiftByIdAsync(giftId);
