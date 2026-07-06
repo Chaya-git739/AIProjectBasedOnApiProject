@@ -24,7 +24,9 @@ services:
       - sqlserver
     environment:
       - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=AuthDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True
-      - Jwt__SecretKey=YourSuperSecretKeyHere1234567890!
+      - Jwt__SecretKey=${JWT_SECRET_KEY}
+      - Jwt__Issuer=RaffleSystemAPI
+      - Jwt__Audience=RaffleSystemClient
 
   orderservice:
     build:
@@ -39,7 +41,9 @@ services:
       - ConnectionStrings__OrderConnection=Server=sqlserver;Database=OrdersDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True
       - Services__NotificationService=http://notificationservice:80
       - Services__CatalogService=http://catalogservice:80
-      - Jwt__SecretKey=YourSuperSecretKeyHere1234567890!
+      - Jwt__SecretKey=${JWT_SECRET_KEY}
+      - Jwt__Issuer=RaffleSystemAPI
+      - Jwt__Audience=RaffleSystemClient
 
   catalogservice:
     build:
@@ -51,7 +55,9 @@ services:
       - sqlserver
     environment:
       - ConnectionStrings__CatalogConnection=Server=sqlserver;Database=CatalogDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True
-      - Jwt__SecretKey=YourSuperSecretKeyHere1234567890!
+      - Jwt__SecretKey=${JWT_SECRET_KEY}
+      - Jwt__Issuer=RaffleSystemAPI
+      - Jwt__Audience=RaffleSystemClient
 
   notificationservice:
     build:
@@ -65,8 +71,8 @@ services:
       - Redis__Connection=redis:6379
       - EmailSettings__SmtpServer=smtp.gmail.com
       - EmailSettings__SmtpPort=587
-      - EmailSettings__SenderEmail=d0583215865@gmail.com
-      - EmailSettings__SenderPassword=csgg dvlj kxov dofe
+      - EmailSettings__SenderEmail=${EMAIL_SENDER_ADDRESS}
+      - EmailSettings__SenderPassword=${EMAIL_SENDER_PASSWORD}
       - EmailSettings__SenderName=מערכת ההגרלות
 
   sqlserver:

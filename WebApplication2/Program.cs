@@ -105,6 +105,7 @@ builder.Services.AddScoped<ICategoryBLL, CategoryServiceBLL>();
 builder.Services.AddScoped<IOrderDal, OrderDAL>();
 builder.Services.AddScoped<IOrderBLL, OrderServiceBLL>();
 builder.Services.AddScoped<RaffleSarviceBLL>();
+builder.Services.AddScoped<IWinnerBLL, WinnerBLL>();
 
 builder.Services.AddScoped<IWinnerDAL, WinnerDal>(provider =>
 {

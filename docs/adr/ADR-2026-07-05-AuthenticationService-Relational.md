@@ -10,6 +10,12 @@ Decision
 --------
 Use a relational database (SQL Server) for `AuthenticationService`.
 
+Implementation note
+-------------------
+- `AuthenticationService` intentionally uses a DAL abstraction directly (`IUserDal` -> `UserDal`) instead of a separate repository layer.
+- `UserServiceBll` owns business logic such as validation and password hashing, while `UserDal` remains responsible for `DbContext` access only.
+- The `IUserDal` naming is an explicit local exception to the repository naming convention used by other services.
+
 Rationale
 ---------
 - Authentication data benefits from unique constraints (email), indexing and transactions.

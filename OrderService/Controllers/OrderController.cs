@@ -132,6 +132,11 @@ namespace OrderService.Controllers
         [Authorize]
         public async Task<IActionResult> AddItemToOrder(int orderId, [FromBody] AddItemRequest request)
         {
+            if (!ModelState.IsValid)
+            {
+                return ValidationProblem(ModelState);
+            }
+
             try
             {
                 await _orderBll.AddItemToOrderAsync(orderId, request.GiftId, request.Quantity);

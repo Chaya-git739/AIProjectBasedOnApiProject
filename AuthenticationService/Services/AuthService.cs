@@ -73,11 +73,15 @@ namespace AuthenticationService.Services
         private string CreateToken(UserDto user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var jwtSecretKey = _configuration["Jwt:SecretKey"] ?? "YourSuperSecretKeyHere1234567890!";
+            var jwtSecretKey = _configuration["Jwt:SecretKey"]!;
+            var issuer = _configuration["Jwt:Issuer"]!;
+            var audience = _configuration["Jwt:Audience"]!;
             var key = Encoding.ASCII.GetBytes(jwtSecretKey);
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
+                Issuer = issuer,
+                Audience = audience,
                 Subject = new ClaimsIdentity(new[]
                 {
                     new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),

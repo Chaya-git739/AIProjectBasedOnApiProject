@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using WebApplication2.DAL;
 using WebApplication2.Models;
 using WebApplication2.BLL;
@@ -13,19 +12,17 @@ namespace WebApplication2.Controllers
     [ApiController]
     public class WinnerController : ControllerBase
     {
-        private readonly WinnerDal _winnerDal;
-        private readonly IEmailService _emailService;
+        private readonly IWinnerBLL _winnerBll;
         
-        public WinnerController(WinnerDal winnerDal, IEmailService emailService) {
-            _winnerDal = winnerDal;
-            _emailService = emailService;
+        public WinnerController(IWinnerBLL winnerBll) {
+            _winnerBll = winnerBll;
         }
         // GET: api/winner
         [HttpGet]
         [Authorize(Roles = "Manager")]
         public async Task <List<WinnerModel>> Get()   
         {
-            return  _winnerDal.GetAllWinners();
+            return await _winnerBll.GetAllWinners();
         }
 
         // GET api/winner/5
@@ -33,7 +30,7 @@ namespace WebApplication2.Controllers
         [Authorize(Roles = "Manager")]
         public async Task<WinnerModel> Get(int id)
         {
-            return await _winnerDal.WinnerBYId(id);
+            return await _winnerBll.GetWinnerById(id);
         }
 
         // POST api/winner
@@ -43,18 +40,7 @@ namespace WebApplication2.Controllers
         {
             try
             {
-                await _winnerDal.AddWinner(winnerModel);
-                
-                // שליחת מייל אוטומטית לזוכה
-                var winner = await _winnerDal.WinnerBYId(winnerModel.Id);
-                if (winner != null)
-                {
-                    await _emailService.SendWinnerNotificationAsync(
-                        winner.User.Email,
-                        winner.User.Name,
-                        winner.Gift.Name
-                    );
-                }
+                await _winnerBll.AddWinnerAndNotifyAsync(winnerModel);
                 
                 return Ok("זוכה נוסף בהצלחה ומייל נשלח");
             }
@@ -82,17 +68,13 @@ namespace WebApplication2.Controllers
         {
             try
             {
-                var winner = await _winnerDal.WinnerBYId(winnerId);
+                var winner = await _winnerBll.GetWinnerById(winnerId);
                 if (winner == null)
                 {
                     return NotFound("זוכה לא נמצא");
                 }
 
-                await _emailService.SendWinnerNotificationAsync(
-                    winner.User.Email, 
-                    winner.User.Name, 
-                    winner.Gift.Name
-                );
+                await _winnerBll.NotifyWinnerAsync(winner);
 
                 return Ok("מייל נשלח בהצלחה");
             }
@@ -107,7 +89,7 @@ namespace WebApplication2.Controllers
         [Authorize(Roles = "Manager")]
         public async Task Delete(int id)
         {
-            await _winnerDal.DeleteWinner(id);
+            await _winnerBll.DeleteWinner(id);
             
         }
     }
