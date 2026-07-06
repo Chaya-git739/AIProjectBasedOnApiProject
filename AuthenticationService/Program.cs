@@ -6,8 +6,25 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using AuthenticationService.Data;
 using AuthenticationService.Services;
+using Serilog;
+using Serilog.Context;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var serviceName = builder.Configuration["ServiceName"] ?? "AuthenticationService";
+var seqUrl = builder.Configuration["Serilog:SeqUrl"] ?? "http://seq:5341";
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("Service", serviceName)
+    .Enrich.WithEnvironmentName()
+    .Enrich.WithThreadId()
+    .WriteTo.Console()
+    .WriteTo.Seq(seqUrl)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 var jwtSecretKey = builder.Configuration["Jwt:SecretKey"];
 if (string.IsNullOrWhiteSpace(jwtSecretKey))
@@ -76,6 +93,26 @@ builder.Services.AddAuthentication(options =>
 });
 
 var app = builder.Build();
+
+app.Use(async (context, next) =>
+{
+    const string correlationHeader = "x-correlation-id";
+    var correlationId = context.Request.Headers[correlationHeader].FirstOrDefault();
+
+    if (string.IsNullOrWhiteSpace(correlationId))
+    {
+        correlationId = Guid.NewGuid().ToString();
+        context.Request.Headers[correlationHeader] = correlationId;
+    }
+
+    context.TraceIdentifier = correlationId;
+    context.Response.Headers[correlationHeader] = correlationId;
+
+    using (LogContext.PushProperty("CorrelationId", correlationId))
+    {
+        await next();
+    }
+});
 
 app.UseSwagger();
 app.UseSwaggerUI();

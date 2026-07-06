@@ -1,4 +1,5 @@
 using OrderService.Models.DTO;
+using Microsoft.AspNetCore.Http;
 
 namespace OrderService.Services
 {
@@ -8,6 +9,7 @@ namespace OrderService.Services
         private readonly IWinnerRepository _winnerRepository;
         private readonly IWinnerService _winnerService;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IConfiguration _configuration;
         private readonly ILogger<RaffleService> _logger;
 
@@ -16,6 +18,7 @@ namespace OrderService.Services
             IWinnerRepository winnerRepository,
             IWinnerService winnerService,
             IHttpClientFactory httpClientFactory,
+            IHttpContextAccessor httpContextAccessor,
             IConfiguration configuration,
             ILogger<RaffleService> logger)
         {
@@ -23,6 +26,7 @@ namespace OrderService.Services
             _winnerRepository = winnerRepository;
             _winnerService = winnerService;
             _httpClientFactory = httpClientFactory;
+            _httpContextAccessor = httpContextAccessor;
             _configuration = configuration;
             _logger = logger;
         }
@@ -76,6 +80,15 @@ namespace OrderService.Services
                 };
 
                 var client = _httpClientFactory.CreateClient();
+                const string correlationHeader = "x-correlation-id";
+                var correlationId = _httpContextAccessor.HttpContext?.Request.Headers[correlationHeader].FirstOrDefault();
+
+                if (!string.IsNullOrWhiteSpace(correlationId))
+                {
+                    client.DefaultRequestHeaders.Remove(correlationHeader);
+                    client.DefaultRequestHeaders.Add(correlationHeader, correlationId);
+                }
+
                 await client.PostAsJsonAsync($"{baseUrl}/api/notification/send", payload);
             }
             catch

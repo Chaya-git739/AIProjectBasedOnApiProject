@@ -57,6 +57,9 @@ Example proxied routes through gateway:
 
 The gateway propagates `x-correlation-id`. If not provided by the client, one is generated automatically.
 
+Stage 5.3 validation runbook:
+- `docs/STAGE53_CORRELATION_VALIDATION_RUNBOOK.md`
+
 ### Run from Visual Studio
 1. Open `WebApplication2.sln`
 2. Set `WebApplication2` as the startup project

@@ -1,6 +1,13 @@
 version: '3.8'
 
 services:
+  seq:
+    image: datalust/seq:latest
+    environment:
+      - ACCEPT_EULA=Y
+    ports:
+      - "5341:80"
+
   apigateway:
     build:
       context: .
@@ -8,11 +15,21 @@ services:
     ports:
       - "5005:8080"
     depends_on:
+      - seq
       - authenticationservice
       - orderservice
       - catalogservice
       - catalogservice2
       - notificationservice
+    environment:
+      - ServiceName=ApiGateway
+      - Serilog__SeqUrl=http://seq:80
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 
   webapi:
     build: 
@@ -30,18 +47,27 @@ services:
       context: .
       dockerfile: AuthenticationService/Dockerfile
     depends_on:
+      - seq
       - sqlserver
     environment:
       - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=AuthDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True
       - Jwt__SecretKey=${JWT_SECRET_KEY}
       - Jwt__Issuer=RaffleSystemAPI
       - Jwt__Audience=RaffleSystemClient
+      - ServiceName=AuthenticationService
+      - Serilog__SeqUrl=http://seq:80
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   orderservice:
     build:
       context: .
       dockerfile: OrderService/Dockerfile
     depends_on:
+      - seq
       - sqlserver
       - notificationservice
     environment:
@@ -51,36 +77,60 @@ services:
       - Jwt__SecretKey=${JWT_SECRET_KEY}
       - Jwt__Issuer=RaffleSystemAPI
       - Jwt__Audience=RaffleSystemClient
+      - ServiceName=OrderService
+      - Serilog__SeqUrl=http://seq:80
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   catalogservice:
     build:
       context: .
       dockerfile: CatalogService/Dockerfile
     depends_on:
+      - seq
       - mongo
     environment:
       - ConnectionStrings__CatalogMongo=mongodb://mongo:27017
       - Jwt__SecretKey=${JWT_SECRET_KEY}
       - Jwt__Issuer=RaffleSystemAPI
       - Jwt__Audience=RaffleSystemClient
+      - ServiceName=CatalogService
+      - Serilog__SeqUrl=http://seq:80
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   catalogservice2:
     build:
       context: .
       dockerfile: CatalogService/Dockerfile
     depends_on:
+      - seq
       - mongo
     environment:
       - ConnectionStrings__CatalogMongo=mongodb://mongo:27017
       - Jwt__SecretKey=${JWT_SECRET_KEY}
       - Jwt__Issuer=RaffleSystemAPI
       - Jwt__Audience=RaffleSystemClient
+      - ServiceName=CatalogService
+      - Serilog__SeqUrl=http://seq:80
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   notificationservice:
     build:
       context: .
       dockerfile: NotificationService/Dockerfile
     depends_on:
+      - seq
       - redis
     environment:
       - Redis__Connection=redis:6379
@@ -89,6 +139,13 @@ services:
       - EmailSettings__SenderEmail=${EMAIL_SENDER_ADDRESS}
       - EmailSettings__SenderPassword=${EMAIL_SENDER_PASSWORD}
       - EmailSettings__SenderName=מערכת ההגרלות
+      - ServiceName=NotificationService
+      - Serilog__SeqUrl=http://seq:80
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -98,7 +155,7 @@ services:
     ports:
       - "1433:1433"
     healthcheck:
-      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "YourStrongPassword123!", "-Q", "SELECT 1"]
+      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "YourStrongPassword123!", "-Q", "SELECT 1", "-C"]
       interval: 10s
       timeout: 10s
       retries: 10

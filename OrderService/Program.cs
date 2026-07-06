@@ -2,9 +2,26 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using OrderService.Data;
 using OrderService.Services;
+using Serilog;
+using Serilog.Context;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var serviceName = builder.Configuration["ServiceName"] ?? "OrderService";
+var seqUrl = builder.Configuration["Serilog:SeqUrl"] ?? "http://seq:5341";
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("Service", serviceName)
+    .Enrich.WithEnvironmentName()
+    .Enrich.WithThreadId()
+    .WriteTo.Console()
+    .WriteTo.Seq(seqUrl)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 var jwtKey = builder.Configuration["Jwt:SecretKey"];
 if (string.IsNullOrWhiteSpace(jwtKey))
@@ -21,6 +38,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddDbContext<OrderDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("OrderConnection")));
@@ -52,6 +70,26 @@ builder.Services.AddAuthentication("Bearer")
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+app.Use(async (context, next) =>
+{
+    const string correlationHeader = "x-correlation-id";
+    var correlationId = context.Request.Headers[correlationHeader].FirstOrDefault();
+
+    if (string.IsNullOrWhiteSpace(correlationId))
+    {
+        correlationId = Guid.NewGuid().ToString();
+        context.Request.Headers[correlationHeader] = correlationId;
+    }
+
+    context.TraceIdentifier = correlationId;
+    context.Response.Headers[correlationHeader] = correlationId;
+
+    using (LogContext.PushProperty("CorrelationId", correlationId))
+    {
+        await next();
+    }
+});
 
 if (app.Environment.IsDevelopment())
 {
