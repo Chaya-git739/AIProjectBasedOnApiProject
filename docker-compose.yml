@@ -19,7 +19,8 @@ services:
       - catalogservice
       - catalogservice2
       - notificationservice
-<<<<<<< HEAD
+      - bffservice
+      - webapi
     environment:
       - ServiceName=ApiGateway
       - Serilog__SeqUrl=http://seq:80
@@ -28,10 +29,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-=======
-      - bffservice
-      - webapi
 
   bffservice:
     build:
@@ -44,7 +41,6 @@ services:
       - Services__OrderService=http://orderservice:80
       - Services__CatalogService=http://catalogservice:80
     restart: on-failure
->>>>>>> 84b24afa1d63119af7623dc9407711dbb09a5442
 
   webapi:
     build: 
@@ -64,13 +60,10 @@ services:
       context: .
       dockerfile: AuthenticationService/Dockerfile
     depends_on:
-<<<<<<< HEAD
-      - seq
-      - sqlserver
-=======
       sqlserver:
         condition: service_healthy
->>>>>>> 84b24afa1d63119af7623dc9407711dbb09a5442
+      seq:
+        condition: service_started
     environment:
       - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=AuthDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True
       - Jwt__SecretKey=YourSuperSecretKeyHere1234567890!
@@ -89,16 +82,12 @@ services:
       context: .
       dockerfile: OrderService/Dockerfile
     depends_on:
-<<<<<<< HEAD
-      - seq
-      - sqlserver
-      - notificationservice
-=======
       sqlserver:
         condition: service_healthy
       notificationservice:
         condition: service_started
->>>>>>> 84b24afa1d63119af7623dc9407711dbb09a5442
+      seq:
+        condition: service_started
     environment:
       - ConnectionStrings__OrderConnection=Server=sqlserver;Database=OrdersDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True
       - Services__NotificationService=http://notificationservice:80
@@ -119,13 +108,10 @@ services:
       context: .
       dockerfile: CatalogService/Dockerfile
     depends_on:
-<<<<<<< HEAD
-      - seq
-      - mongo
-=======
       mongo:
         condition: service_healthy
->>>>>>> 84b24afa1d63119af7623dc9407711dbb09a5442
+      seq:
+        condition: service_started
     environment:
       - ConnectionStrings__CatalogMongo=mongodb://mongo:27017
       - Jwt__SecretKey=YourSuperSecretKeyHere1234567890!
@@ -144,13 +130,10 @@ services:
       context: .
       dockerfile: CatalogService/Dockerfile
     depends_on:
-<<<<<<< HEAD
-      - seq
-      - mongo
-=======
       mongo:
         condition: service_healthy
->>>>>>> 84b24afa1d63119af7623dc9407711dbb09a5442
+      seq:
+        condition: service_started
     environment:
       - ConnectionStrings__CatalogMongo=mongodb://mongo:27017
       - Jwt__SecretKey=YourSuperSecretKeyHere1234567890!
@@ -169,13 +152,10 @@ services:
       context: .
       dockerfile: NotificationService/Dockerfile
     depends_on:
-<<<<<<< HEAD
-      - seq
-      - redis
-=======
       redis:
         condition: service_healthy
->>>>>>> 84b24afa1d63119af7623dc9407711dbb09a5442
+      seq:
+        condition: service_started
     environment:
       - Redis__Connection=redis:6379
       - EmailSettings__SmtpServer=smtp.gmail.com
@@ -201,11 +181,7 @@ services:
     volumes:
       - sqlserver_data:/var/opt/mssql
     healthcheck:
-<<<<<<< HEAD
-      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "YourStrongPassword123!", "-Q", "SELECT 1", "-C"]
-=======
       test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "YourStrongPassword123!", "-C", "-Q", "SELECT 1"]
->>>>>>> 84b24afa1d63119af7623dc9407711dbb09a5442
       interval: 10s
       timeout: 10s
       retries: 10
