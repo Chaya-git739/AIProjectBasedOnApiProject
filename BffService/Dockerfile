@@ -4,10 +4,9 @@ EXPOSE 80
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY ["BffService/BffService.csproj", "BffService/"]
-RUN dotnet restore "BffService/BffService.csproj"
-COPY BffService/. ./BffService/
-WORKDIR "/src/BffService"
+COPY ["BffService.csproj", "./"]
+RUN dotnet restore "BffService.csproj"
+COPY . ./
 RUN dotnet publish "BffService.csproj" -c Release -o /app/publish
 
 FROM base AS final

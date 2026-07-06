@@ -80,7 +80,7 @@ builder.Services.AddSwaggerGen(c =>
 // -----------------------------
 // שירותים נוספים (DI) והרשאות AutoMapper/DbContext
 // -----------------------------
-builder.Services.AddAutoMapper(typeof(Program).Assembly);
+builder.Services.AddAutoMapper(cfg => { }, typeof(WebApplication2.Mappings.GiftMappingProfile));
 builder.Services.AddDbContext<StoreContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
     sqlServerOptionsAction: sqlOptions =>
