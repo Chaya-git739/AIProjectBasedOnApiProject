@@ -6,170 +6,19 @@ services:
     ports:
       - "5341:80"
 
-  apigateway:
-    build:
-      context: .
-      dockerfile: ApiGateway/Dockerfile
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
     ports:
-      - "5005:8080"
-    depends_on:
-      - seq
-      - authenticationservice
-      - orderservice
-      - catalogservice
-      - catalogservice2
-      - notificationservice
-      - bffservice
-      - webapi
-    environment:
-      - ServiceName=ApiGateway
-      - Serilog__SeqUrl=http://seq:80
+      - "5672:5672"
+      - "15672:15672"
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
       timeout: 5s
-      retries: 5
-
-  bffservice:
-    build:
-      context: ./BffService
-      dockerfile: Dockerfile
-    depends_on:
-      - orderservice
-      - catalogservice
-    environment:
-      - Services__OrderService=http://orderservice:80
-      - Services__CatalogService=http://catalogservice:80
-    restart: on-failure
-
-  webapi:
-    build: 
-      context: ./WebApplication2
-      dockerfile: Dockerfile
-    depends_on:
-      sqlserver:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=MyStoreDatabase;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True
-      - Redis__Connection=redis:6379
-
-  authenticationservice:
-    build:
-      context: .
-      dockerfile: AuthenticationService/Dockerfile
-    depends_on:
-      sqlserver:
-        condition: service_healthy
-      seq:
-        condition: service_started
-    environment:
-      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=AuthDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True
-      - Jwt__SecretKey=YourSuperSecretKeyHere1234567890!
-      - Jwt__Issuer=RaffleSystemAPI
-      - Jwt__Audience=RaffleSystemClient
-      - ServiceName=AuthenticationService
-      - Serilog__SeqUrl=http://seq:80
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  orderservice:
-    build:
-      context: .
-      dockerfile: OrderService/Dockerfile
-    depends_on:
-      sqlserver:
-        condition: service_healthy
-      notificationservice:
-        condition: service_started
-      seq:
-        condition: service_started
-    environment:
-      - ConnectionStrings__OrderConnection=Server=sqlserver;Database=OrdersDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True
-      - Services__NotificationService=http://notificationservice:80
-      - Services__CatalogService=http://catalogservice:80
-      - Jwt__SecretKey=YourSuperSecretKeyHere1234567890!
-      - Jwt__Issuer=RaffleSystemAPI
-      - Jwt__Audience=RaffleSystemClient
-      - ServiceName=OrderService
-      - Serilog__SeqUrl=http://seq:80
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  catalogservice:
-    build:
-      context: .
-      dockerfile: CatalogService/Dockerfile
-    depends_on:
-      mongo:
-        condition: service_healthy
-      seq:
-        condition: service_started
-    environment:
-      - ConnectionStrings__CatalogMongo=mongodb://mongo:27017
-      - Jwt__SecretKey=YourSuperSecretKeyHere1234567890!
-      - Jwt__Issuer=RaffleSystemAPI
-      - Jwt__Audience=RaffleSystemClient
-      - ServiceName=CatalogService
-      - Serilog__SeqUrl=http://seq:80
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  catalogservice2:
-    build:
-      context: .
-      dockerfile: CatalogService/Dockerfile
-    depends_on:
-      mongo:
-        condition: service_healthy
-      seq:
-        condition: service_started
-    environment:
-      - ConnectionStrings__CatalogMongo=mongodb://mongo:27017
-      - Jwt__SecretKey=YourSuperSecretKeyHere1234567890!
-      - Jwt__Issuer=RaffleSystemAPI
-      - Jwt__Audience=RaffleSystemClient
-      - ServiceName=CatalogService
-      - Serilog__SeqUrl=http://seq:80
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  notificationservice:
-    build:
-      context: .
-      dockerfile: NotificationService/Dockerfile
-    depends_on:
-      redis:
-        condition: service_healthy
-      seq:
-        condition: service_started
-    environment:
-      - Redis__Connection=redis:6379
-      - EmailSettings__SmtpServer=smtp.gmail.com
-      - EmailSettings__SmtpPort=587
-      - EmailSettings__SenderEmail=dummy-sender@example.com
-      - EmailSettings__SenderPassword=dummy-password
-      - EmailSettings__SenderName=מערכת ההגרלות
-      - ServiceName=NotificationService
-      - Serilog__SeqUrl=http://seq:80
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      retries: 10
 
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -181,7 +30,7 @@ services:
     volumes:
       - sqlserver_data:/var/opt/mssql
     healthcheck:
-      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "YourStrongPassword123!", "-C", "-Q", "SELECT 1"]
+      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "YourStrongPassword123!", "-Q", "SELECT 1", "-C"]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -206,6 +55,196 @@ services:
       - mongo_data:/data/db
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  authenticationservice:
+    build:
+      context: .
+      dockerfile: AuthenticationService/Dockerfile
+    depends_on:
+      seq:
+        condition: service_started
+      sqlserver:
+        condition: service_healthy
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=AuthDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True
+      - Jwt__SecretKey=YourSuperSecretKeyHere1234567890!
+      - Jwt__Issuer=RaffleSystemAPI
+      - Jwt__Audience=RaffleSystemClient
+      - ServiceName=AuthenticationService
+      - Serilog__SeqUrl=http://seq:80
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  catalogservice:
+    build:
+      context: .
+      dockerfile: CatalogService/Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      seq:
+        condition: service_started
+      mongo:
+        condition: service_healthy
+    environment:
+      - ConnectionStrings__CatalogMongo=mongodb://mongo:27017
+      - Jwt__SecretKey=YourSuperSecretKeyHere1234567890!
+      - Jwt__Issuer=RaffleSystemAPI
+      - Jwt__Audience=RaffleSystemClient
+      - ServiceName=CatalogService
+      - Serilog__SeqUrl=http://seq:80
+      - RabbitMq__Host=rabbitmq
+      - RabbitMq__User=guest
+      - RabbitMq__Password=guest
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  catalogservice2:
+    build:
+      context: .
+      dockerfile: CatalogService/Dockerfile
+    depends_on:
+      seq:
+        condition: service_started
+      mongo:
+        condition: service_healthy
+    environment:
+      - ConnectionStrings__CatalogMongo=mongodb://mongo:27017
+      - Jwt__SecretKey=YourSuperSecretKeyHere1234567890!
+      - Jwt__Issuer=RaffleSystemAPI
+      - Jwt__Audience=RaffleSystemClient
+      - ServiceName=CatalogService
+      - Serilog__SeqUrl=http://seq:80
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  notificationservice:
+    build:
+      context: .
+      dockerfile: NotificationService/Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      seq:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    environment:
+      - Redis__Connection=redis:6379
+      - EmailSettings__SmtpServer=smtp.gmail.com
+      - EmailSettings__SmtpPort=587
+      - EmailSettings__SenderEmail=dummy-sender@example.com
+      - EmailSettings__SenderPassword=dummy-password
+      - EmailSettings__SenderName=מערכת ההגרלות
+      - ServiceName=NotificationService
+      - Serilog__SeqUrl=http://seq:80
+      - RabbitMq__Host=rabbitmq
+      - RabbitMq__User=guest
+      - RabbitMq__Password=guest
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  orderservice:
+    build:
+      context: .
+      dockerfile: OrderService/Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      seq:
+        condition: service_started
+      sqlserver:
+        condition: service_healthy
+      notificationservice:
+        condition: service_started
+      catalogservice:
+        condition: service_started
+    environment:
+      - ConnectionStrings__OrderConnection=Server=sqlserver;Database=OrdersDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True
+      - Services__NotificationService=http://notificationservice:80
+      - Services__CatalogService=http://catalogservice:80
+      - Jwt__SecretKey=YourSuperSecretKeyHere1234567890!
+      - Jwt__Issuer=RaffleSystemAPI
+      - Jwt__Audience=RaffleSystemClient
+      - ServiceName=OrderService
+      - Serilog__SeqUrl=http://seq:80
+      - RabbitMq__Host=rabbitmq
+      - RabbitMq__User=guest
+      - RabbitMq__Password=guest
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bffservice:
+    build:
+      context: ./BffService
+      dockerfile: Dockerfile
+    depends_on:
+      orderservice:
+        condition: service_started
+      catalogservice:
+        condition: service_started
+    environment:
+      - Services__OrderService=http://orderservice:80
+      - Services__CatalogService=http://catalogservice:80
+    restart: on-failure
+
+  webapi:
+    build:
+      context: ./WebApplication2
+      dockerfile: Dockerfile
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=MyStoreDatabase;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True
+      - Redis__Connection=redis:6379
+
+  apigateway:
+    build:
+      context: .
+      dockerfile: ApiGateway/Dockerfile
+    ports:
+      - "5005:8080"
+    depends_on:
+      seq:
+        condition: service_started
+      authenticationservice:
+        condition: service_started
+      orderservice:
+        condition: service_started
+      catalogservice:
+        condition: service_started
+      catalogservice2:
+        condition: service_started
+      notificationservice:
+        condition: service_started
+      bffservice:
+        condition: service_started
+    environment:
+      - ServiceName=ApiGateway
+      - Serilog__SeqUrl=http://seq:80
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
       interval: 10s
       timeout: 5s
       retries: 5

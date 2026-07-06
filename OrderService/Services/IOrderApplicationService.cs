@@ -10,6 +10,7 @@ namespace OrderService.Services
         Task<List<OrderDTO>> GetUserHistoryAsync(int userId);
         Task<List<OrderDTO>> GetAllOrdersAsync();
         Task ConfirmOrderAsync(int orderId);
+        Task CancelOrderAsync(int orderId);
         Task RemoveOrderItemAsync(int orderId, int giftId);
         Task AddItemToOrderAsync(int orderId, int giftId, int quantity);
     }

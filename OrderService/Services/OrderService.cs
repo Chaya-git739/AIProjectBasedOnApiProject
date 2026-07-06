@@ -1,5 +1,7 @@
 using OrderService.Models;
 using OrderService.Models.DTO;
+using OrderService.Messaging;
+using Microsoft.AspNetCore.Http;
 
 namespace OrderService.Services
 {
@@ -7,16 +9,22 @@ namespace OrderService.Services
     {
         private readonly IOrderRepository _orderRepository;
         private readonly ICatalogServiceClient _catalogClient;
-        private readonly IRedisInventoryService _redisInventory;
+        private readonly IRabbitMqPublisher _publisher;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ILogger<OrderService> _logger;
 
         public OrderService(
             IOrderRepository orderRepository,
             ICatalogServiceClient catalogClient,
-            IRedisInventoryService redisInventory)
+            IRabbitMqPublisher publisher,
+            IHttpContextAccessor httpContextAccessor,
+            ILogger<OrderService> logger)
         {
             _orderRepository = orderRepository;
             _catalogClient = catalogClient;
-            _redisInventory = redisInventory;
+            _publisher = publisher;
+            _httpContextAccessor = httpContextAccessor;
+            _logger = logger;
         }
 
         public async Task<int> PlaceOrderAsync(OrderDTO dto)
@@ -34,45 +42,41 @@ namespace OrderService.Services
                 throw new BusinessException("GiftId ו-Quantity חייבים להיות גדולים מאפס");
             }
 
-            var reservedItems = new List<(int GiftId, int Quantity)>();
-
-            try
+            var order = new OrderModel
             {
-                foreach (var item in dto.OrderItems)
+                UserId = dto.UserId,
+                IsDraft = dto.IsDraft,
+                OrderDate = DateTime.UtcNow,
+                TotalAmount = dto.OrderItems.Sum(i => i.Quantity),
+                OrderItems = dto.OrderItems.Select(i => new OrderTicketModel
                 {
-                    var reservation = await _redisInventory.ReserveTicketQuantityAsync(item.GiftId, item.Quantity);
-                    if (reservation < 0)
-                    {
-                        throw new BusinessException($"אין מספיק מלאי זמין למתנה {item.GiftId}");
-                    }
+                    GiftId = i.GiftId,
+                    Quantity = i.Quantity
+                }).ToList()
+            };
 
-                    reservedItems.Add((item.GiftId, item.Quantity));
-                }
+            var orderId = await _orderRepository.AddOrderAsync(order);
 
-                var order = new OrderModel
-                {
-                    UserId = dto.UserId,
-                    IsDraft = dto.IsDraft,
-                    OrderDate = DateTime.UtcNow,
-                    TotalAmount = dto.OrderItems.Sum(i => i.Quantity),
-                    OrderItems = dto.OrderItems.Select(i => new OrderTicketModel
-                    {
-                        GiftId = i.GiftId,
-                        Quantity = i.Quantity
-                    }).ToList()
-                };
+            const string correlationHeader = "x-correlation-id";
+            var correlationId = _httpContextAccessor.HttpContext?.Request.Headers[correlationHeader].FirstOrDefault()
+                ?? string.Empty;
 
-                return await _orderRepository.AddOrderAsync(order);
-            }
-            catch
+            var evt = new OrderPlacedEvent
             {
-                foreach (var reserved in reservedItems)
+                CorrelationId = correlationId,
+                OrderId = orderId,
+                UserId = dto.UserId,
+                Items = dto.OrderItems.Select(i => new OrderPlacedItemEvent
                 {
-                    await _redisInventory.ReleaseTicketQuantityAsync(reserved.GiftId, reserved.Quantity);
-                }
+                    GiftId = i.GiftId,
+                    Quantity = i.Quantity
+                }).ToList()
+            };
 
-                throw;
-            }
+            await _publisher.PublishAsync("order.placed", evt);
+            _logger.LogInformation("OrderPlaced event published for order {OrderId}", orderId);
+
+            return orderId;
         }
 
         public async Task<OrderDetailsSourceDto?> GetOrderByIdAsync(int orderId)
@@ -154,8 +158,23 @@ namespace OrderService.Services
             var success = await _orderRepository.ConfirmOrderAsync(orderId);
             if (!success)
             {
-                throw new BusinessException("הזמנה לא נמצאה");
+                _logger.LogWarning("[Saga] ConfirmOrderAsync skipped because order not found. OrderId={OrderId}", orderId);
+                return;
             }
+
+            _logger.LogInformation("[Saga] ConfirmOrderAsync succeeded. OrderId={OrderId}", orderId);
+        }
+
+        public async Task CancelOrderAsync(int orderId)
+        {
+            var success = await _orderRepository.CancelOrderAsync(orderId);
+            if (!success)
+            {
+                _logger.LogWarning("[Saga] CancelOrderAsync skipped because order not found. OrderId={OrderId}", orderId);
+                return;
+            }
+
+            _logger.LogInformation("[Saga] CancelOrderAsync succeeded. OrderId={OrderId}", orderId);
         }
 
         public async Task RemoveOrderItemAsync(int orderId, int giftId)

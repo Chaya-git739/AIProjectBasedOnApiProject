@@ -1,5 +1,6 @@
 using CatalogService.Data;
 using CatalogService.Mappings;
+using CatalogService.Messaging;
 using CatalogService.Services;
 using MongoDB.Driver;
 using Microsoft.IdentityModel.Tokens;
@@ -61,6 +62,8 @@ builder.Services.AddScoped<IGiftRepository, MongoGiftRepository>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IGiftService, GiftService>();
 builder.Services.AddScoped<IDonorService, DonorService>();
+builder.Services.AddSingleton<IProcessedMessageStore, ProcessedMessageStore>();
+builder.Services.AddHostedService<InventoryReservationConsumer>();
 
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer(options =>

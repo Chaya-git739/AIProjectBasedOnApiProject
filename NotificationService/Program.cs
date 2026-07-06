@@ -1,3 +1,4 @@
+using NotificationService.Messaging;
 using NotificationService.Services;
 using Microsoft.OpenApi.Models;
 using Serilog;
@@ -34,6 +35,8 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddScoped<INotificationService, NotificationService.Services.NotificationService>();
 builder.Services.AddScoped<IEmailNotificationService, EmailNotificationService>();
 builder.Services.AddScoped<ICacheInvalidationService, CacheInvalidationService>();
+builder.Services.AddSingleton<IProcessedMessageStore, ProcessedMessageStore>();
+builder.Services.AddHostedService<OrderStatusChangedConsumer>();
 
 var app = builder.Build();
 
