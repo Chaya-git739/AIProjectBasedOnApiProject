@@ -86,6 +86,20 @@ namespace OrderService.Controllers
             }
         }
 
+        [HttpGet("{orderId:int}")]
+        public async Task<IActionResult> GetById(int orderId)
+        {
+            try
+            {
+                var order = await _orderBll.GetOrderByIdAsync(orderId);
+                return order == null ? NotFound("הזמנה לא נמצאה") : Ok(order);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "אירעה שגיאה בטעינת ההזמנה");
+            }
+        }
+
         [HttpGet("user/history")]
         public async Task<IActionResult> GetUserOrderHistory()
         {

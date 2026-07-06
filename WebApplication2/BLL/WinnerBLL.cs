@@ -3,7 +3,7 @@ using WebApplication2.Models;
 
 namespace WebApplication2.BLL
 {
-    public class WinnerBLL
+    public class WinnerBLL : IWinnerBLL
     {
         private readonly IWinnerDAL _winnerDal;
         private readonly IEmailService _emailService;
