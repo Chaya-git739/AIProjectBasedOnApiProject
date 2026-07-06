@@ -1,7 +1,7 @@
 using CatalogService.Data;
 using CatalogService.Mappings;
 using CatalogService.Services;
-using Microsoft.EntityFrameworkCore;
+using MongoDB.Driver;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -27,13 +27,20 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 builder.Services.AddHealthChecks();
-builder.Services.AddAutoMapper(typeof(CatalogMappingProfile));
-builder.Services.AddDbContext<CatalogDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("CatalogConnection")));
+builder.Services.AddAutoMapper(cfg => { }, typeof(CatalogMappingProfile));
 
-builder.Services.AddScoped<ICategoryRepository, EfCategoryRepository>();
-builder.Services.AddScoped<IDonorRepository, EfDonorRepository>();
-builder.Services.AddScoped<IGiftRepository, EfGiftRepository>();
+var mongoConnectionString = builder.Configuration.GetConnectionString("CatalogMongo")
+    ?? builder.Configuration["Mongo:ConnectionString"]
+    ?? "mongodb://mongo:27017";
+var mongoDatabaseName = builder.Configuration["Mongo:Database"] ?? "CatalogDb";
+
+builder.Services.AddSingleton<IMongoClient>(_ => new MongoClient(mongoConnectionString));
+builder.Services.AddSingleton(sp =>
+    sp.GetRequiredService<IMongoClient>().GetDatabase(mongoDatabaseName));
+
+builder.Services.AddScoped<ICategoryRepository, MongoCategoryRepository>();
+builder.Services.AddScoped<IDonorRepository, MongoDonorRepository>();
+builder.Services.AddScoped<IGiftRepository, MongoGiftRepository>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IGiftService, GiftService>();
 builder.Services.AddScoped<IDonorService, DonorService>();
@@ -58,6 +65,13 @@ builder.Services.AddAuthentication("Bearer")
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+app.Use(async (context, next) =>
+{
+    var instanceId = Environment.GetEnvironmentVariable("HOSTNAME") ?? Environment.MachineName;
+    context.Response.Headers["X-Instance-Id"] = instanceId;
+    await next();
+});
 
 if (app.Environment.IsDevelopment())
 {

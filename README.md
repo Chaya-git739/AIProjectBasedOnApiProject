@@ -45,6 +45,18 @@ docker-compose up --build
 The API will be available at `http://locFalhost:5226
 `.
 
+Gateway (Phase 3 baseline) is available at `http://localhost:5005`.
+
+Example proxied routes through gateway:
+- `http://localhost:5005/api/account/...` -> `AuthenticationService`
+- `http://localhost:5005/api/order/...` -> `OrderService`
+- `http://localhost:5005/api/gift/...` -> `CatalogService`
+- `http://localhost:5005/api/category/...` -> `CatalogService`
+- `http://localhost:5005/api/donor/...` -> `CatalogService`
+- `http://localhost:5005/api/notification/...` -> `NotificationService`
+
+The gateway propagates `x-correlation-id`. If not provided by the client, one is generated automatically.
+
 ### Run from Visual Studio
 1. Open `WebApplication2.sln`
 2. Set `WebApplication2` as the startup project

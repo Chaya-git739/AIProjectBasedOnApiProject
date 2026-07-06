@@ -1,9 +1,11 @@
 using System.ComponentModel.DataAnnotations;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace CatalogService.Models
 {
     public class GiftModel
     {
+        [BsonId]
         public int Id { get; set; }
 
         [Required]

@@ -10,6 +10,14 @@ Decision
 --------
 Use a document database (MongoDB) for `ProductCatalogService`.
 
+Why this is the best choice
+---------------------------
+- Catalog data is read-heavy and naturally document-shaped, so MongoDB stores the full product view without forcing it into multiple joined tables.
+- Product attributes can vary by category, and a document model allows that variation without frequent schema migrations.
+- The service already benefits from denormalized reads for category and donor information, which matches MongoDB's strengths.
+- Catalog changes are independent from order and authentication transactions, so the service does not need the strongest relational consistency guarantees.
+- MongoDB keeps the catalog service isolated from the relational databases used by AuthenticationService and OrderService, which reduces coupling and matches the microservice boundary.
+
 Rationale
 ---------
 - Documents model variable product attributes naturally without expensive schema migrations.
