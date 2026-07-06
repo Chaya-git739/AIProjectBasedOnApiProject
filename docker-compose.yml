@@ -1,12 +1,23 @@
 version: '3.8'
 
 services:
+  apigateway:
+    build:
+      context: .
+      dockerfile: ApiGateway/Dockerfile
+    ports:
+      - "5005:8080"
+    depends_on:
+      - authenticationservice
+      - orderservice
+      - catalogservice
+      - catalogservice2
+      - notificationservice
+
   webapi:
     build: 
       context: ./WebApplication2
       dockerfile: Dockerfile
-    ports:
-      - "5000:8080"
     depends_on:
       - sqlserver
       - redis
@@ -16,10 +27,8 @@ services:
 
   authenticationservice:
     build:
-      context: ./AuthenticationService
-      dockerfile: Dockerfile
-    ports:
-      - "5001:80"
+      context: .
+      dockerfile: AuthenticationService/Dockerfile
     depends_on:
       - sqlserver
     environment:
@@ -30,10 +39,8 @@ services:
 
   orderservice:
     build:
-      context: ./OrderService
-      dockerfile: Dockerfile
-    ports:
-      - "5002:80"
+      context: .
+      dockerfile: OrderService/Dockerfile
     depends_on:
       - sqlserver
       - notificationservice
@@ -47,24 +54,32 @@ services:
 
   catalogservice:
     build:
-      context: ./CatalogService
-      dockerfile: Dockerfile
-    ports:
-      - "5003:80"
+      context: .
+      dockerfile: CatalogService/Dockerfile
     depends_on:
-      - sqlserver
+      - mongo
     environment:
-      - ConnectionStrings__CatalogConnection=Server=sqlserver;Database=CatalogDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True
+      - ConnectionStrings__CatalogMongo=mongodb://mongo:27017
+      - Jwt__SecretKey=${JWT_SECRET_KEY}
+      - Jwt__Issuer=RaffleSystemAPI
+      - Jwt__Audience=RaffleSystemClient
+
+  catalogservice2:
+    build:
+      context: .
+      dockerfile: CatalogService/Dockerfile
+    depends_on:
+      - mongo
+    environment:
+      - ConnectionStrings__CatalogMongo=mongodb://mongo:27017
       - Jwt__SecretKey=${JWT_SECRET_KEY}
       - Jwt__Issuer=RaffleSystemAPI
       - Jwt__Audience=RaffleSystemClient
 
   notificationservice:
     build:
-      context: ./NotificationService
-      dockerfile: Dockerfile
-    ports:
-      - "5004:80"
+      context: .
+      dockerfile: NotificationService/Dockerfile
     depends_on:
       - redis
     environment:
@@ -94,6 +109,16 @@ services:
       - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })"]
       interval: 10s
       timeout: 5s
       retries: 5
