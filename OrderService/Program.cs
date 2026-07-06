@@ -4,6 +4,7 @@ using OrderService.Data;
 using OrderService.Services;
 using Serilog;
 using Serilog.Context;
+using StackExchange.Redis;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -39,6 +40,13 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
 builder.Services.AddHttpContextAccessor();
+
+var redisConnection = builder.Configuration.GetValue<string>("Redis:Connection") ?? "redis:6379";
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
+    ConnectionMultiplexer.Connect(redisConnection));
+
+builder.Services.AddSingleton<IRedisInventoryService, RedisInventoryService>();
 
 builder.Services.AddDbContext<OrderDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("OrderConnection")));

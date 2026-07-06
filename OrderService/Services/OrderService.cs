@@ -7,11 +7,16 @@ namespace OrderService.Services
     {
         private readonly IOrderRepository _orderRepository;
         private readonly ICatalogServiceClient _catalogClient;
+        private readonly IRedisInventoryService _redisInventory;
 
-        public OrderService(IOrderRepository orderRepository, ICatalogServiceClient catalogClient)
+        public OrderService(
+            IOrderRepository orderRepository,
+            ICatalogServiceClient catalogClient,
+            IRedisInventoryService redisInventory)
         {
             _orderRepository = orderRepository;
             _catalogClient = catalogClient;
+            _redisInventory = redisInventory;
         }
 
         public async Task<int> PlaceOrderAsync(OrderDTO dto)
@@ -29,20 +34,45 @@ namespace OrderService.Services
                 throw new BusinessException("GiftId ו-Quantity חייבים להיות גדולים מאפס");
             }
 
-            var order = new OrderModel
-            {
-                UserId = dto.UserId,
-                IsDraft = dto.IsDraft,
-                OrderDate = DateTime.UtcNow,
-                TotalAmount = dto.OrderItems.Sum(i => i.Quantity),
-                OrderItems = dto.OrderItems.Select(i => new OrderTicketModel
-                {
-                    GiftId = i.GiftId,
-                    Quantity = i.Quantity
-                }).ToList()
-            };
+            var reservedItems = new List<(int GiftId, int Quantity)>();
 
-            return await _orderRepository.AddOrderAsync(order);
+            try
+            {
+                foreach (var item in dto.OrderItems)
+                {
+                    var reservation = await _redisInventory.ReserveTicketQuantityAsync(item.GiftId, item.Quantity);
+                    if (reservation < 0)
+                    {
+                        throw new BusinessException($"אין מספיק מלאי זמין למתנה {item.GiftId}");
+                    }
+
+                    reservedItems.Add((item.GiftId, item.Quantity));
+                }
+
+                var order = new OrderModel
+                {
+                    UserId = dto.UserId,
+                    IsDraft = dto.IsDraft,
+                    OrderDate = DateTime.UtcNow,
+                    TotalAmount = dto.OrderItems.Sum(i => i.Quantity),
+                    OrderItems = dto.OrderItems.Select(i => new OrderTicketModel
+                    {
+                        GiftId = i.GiftId,
+                        Quantity = i.Quantity
+                    }).ToList()
+                };
+
+                return await _orderRepository.AddOrderAsync(order);
+            }
+            catch
+            {
+                foreach (var reserved in reservedItems)
+                {
+                    await _redisInventory.ReleaseTicketQuantityAsync(reserved.GiftId, reserved.Quantity);
+                }
+
+                throw;
+            }
         }
 
         public async Task<OrderDetailsSourceDto?> GetOrderByIdAsync(int orderId)
