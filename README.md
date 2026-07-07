@@ -9,6 +9,77 @@ WebApplication2 is an ASP.NET Core Web API project built with .NET 9.0. It provi
 - Email notifications via MailKit
 - AutoMapper for DTO mapping
 
+## 🏗️ Target System Architecture
+```mermaid
+flowchart LR
+  %% Clients
+  U[Web / Mobile Client]
+  A[Admin Client]
+
+  %% Edge
+  G[API Gateway\nYARP/Ocelot]
+  B[BFF Service\nWeb-tailored aggregation]
+
+  %% Core Services
+  AUTH[Authentication Service]
+  ORDER[Order Service]
+  CATALOG[Catalog Service]
+  NOTIF[Notification Service]
+
+  %% Messaging
+  MQ[(RabbitMQ\nEvent Bus)]
+
+  %% Data Stores
+  AUTHDB[(Auth SQL DB)]
+  ORDERDB[(Order SQL DB)]
+  CATALOGDB[(Catalog MongoDB)]
+  REDIS[(Redis Cache)]
+  NOTIFDB[(Notification Store\nMongo/SQL optional)]
+  SEQ[(Seq / Log Aggregator)]
+
+  %% Client entry
+  U --> G
+  A --> G
+
+  %% Gateway routing
+  G --> AUTH
+  G --> ORDER
+  G --> CATALOG
+  G --> NOTIF
+  G --> B
+
+  %% BFF aggregation path
+  B --> ORDER
+  B --> CATALOG
+
+  %% Sync service-to-db ownership
+  AUTH --> AUTHDB
+  ORDER --> ORDERDB
+  CATALOG --> CATALOGDB
+  CATALOG --> REDIS
+  NOTIF --> NOTIFDB
+
+  %% Future async saga choreography via RabbitMQ
+  ORDER -- Publish OrderPlaced --> MQ
+  MQ -- Consume OrderPlaced --> CATALOG
+  CATALOG -- Publish InventoryReserved / InventoryRejected --> MQ
+  MQ -- Consume InventoryResult --> ORDER
+  ORDER -- Publish OrderConfirmed / OrderRejected --> MQ
+  MQ -- Consume OrderFinalized --> NOTIF
+
+  %% Optional direct sync fallback (if needed)
+  ORDER -. optional sync calls .-> CATALOG
+  ORDER -. optional sync calls .-> NOTIF
+
+  %% Observability
+  G --> SEQ
+  B --> SEQ
+  AUTH --> SEQ
+  ORDER --> SEQ
+  CATALOG --> SEQ
+  NOTIF --> SEQ
+```
+
 ## Repository Structure
 - `WebApplication2/`
   - Main ASP.NET Core project

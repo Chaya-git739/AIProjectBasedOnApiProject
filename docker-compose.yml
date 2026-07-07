@@ -24,11 +24,6 @@ services:
     environment:
       - ServiceName=ApiGateway
       - Serilog__SeqUrl=http://seq:80
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   bffservice:
     build:
@@ -71,11 +66,6 @@ services:
       - Jwt__Audience=RaffleSystemClient
       - ServiceName=AuthenticationService
       - Serilog__SeqUrl=http://seq:80
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   orderservice:
     build:
@@ -97,11 +87,6 @@ services:
       - Jwt__Audience=RaffleSystemClient
       - ServiceName=OrderService
       - Serilog__SeqUrl=http://seq:80
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   catalogservice:
     build:
@@ -119,11 +104,6 @@ services:
       - Jwt__Audience=RaffleSystemClient
       - ServiceName=CatalogService
       - Serilog__SeqUrl=http://seq:80
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   catalogservice2:
     build:
@@ -141,11 +121,6 @@ services:
       - Jwt__Audience=RaffleSystemClient
       - ServiceName=CatalogService
       - Serilog__SeqUrl=http://seq:80
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   notificationservice:
     build:
@@ -165,11 +140,6 @@ services:
       - EmailSettings__SenderName=מערכת ההגרלות
       - ServiceName=NotificationService
       - Serilog__SeqUrl=http://seq:80
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -207,8 +177,9 @@ services:
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })"]
       interval: 10s
-      timeout: 5s
-      retries: 5
+      timeout: 20s
+      retries: 10
+      start_period: 30s
 
 volumes:
   sqlserver_data:

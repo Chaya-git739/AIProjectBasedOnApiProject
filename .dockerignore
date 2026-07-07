@@ -1,0 +1,9 @@
+**/obj/
+**/bin/
+**/.vs/
+**/.git/
+**/*.user
+**/*.suo
+**/node_modules/
+**/.idea/
+WebApplication2/wwwroot/
