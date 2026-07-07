@@ -159,6 +159,20 @@ public sealed class OrderStatusChangedConsumer : BackgroundService
             }
         };
 
+        if (JsonSerializer.Deserialize<Dictionary<string, object?>>(body) is { } payload)
+        {
+            if (payload.TryGetValue("CorrelationId", out var correlationId) && correlationId != null)
+            {
+                props.CorrelationId = correlationId.ToString();
+                props.Headers["x-correlation-id"] = correlationId.ToString();
+            }
+
+            if (payload.TryGetValue("MessageId", out var messageId) && messageId != null)
+            {
+                props.MessageId = messageId.ToString();
+            }
+        }
+
         var bytes = Encoding.UTF8.GetBytes(body);
         await channel.BasicPublishAsync("raffle.events", routingKey, false, props, bytes, ct);
     }

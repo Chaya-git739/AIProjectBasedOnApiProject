@@ -59,7 +59,7 @@ flowchart LR
   CATALOG --> REDIS
   NOTIF --> NOTIFDB
 
-  %% Future async saga choreography via RabbitMQ
+  %% RabbitMQ saga choreography is implemented in the service layer
   ORDER -- Publish OrderPlaced --> MQ
   MQ -- Consume OrderPlaced --> CATALOG
   CATALOG -- Publish InventoryReserved / InventoryRejected --> MQ
@@ -147,6 +147,15 @@ Key configuration values are in `WebApplication2/appsettings.json`:
 - Swagger UI is enabled by default and is available at `/swagger`
 - The project automatically applies pending EF Core migrations at startup
 - `WebApplication2/DAL/StoreContext.cs` is the active database context used by the app
+- RabbitMQ is implemented as an event bus for the Order, Catalog, and Notification services
+- The main event flow is `order.placed` -> `inventory.reserved` / `inventory.rejected` -> `order.status-changed`
+
+## Final Project Status
+- Implemented: API Gateway, BFF, RabbitMQ-based saga choreography, Redis, and structured logging/health checks across the split services.
+- Partially covered: database-per-service and polyglot persistence are present, but the documentation and ADR set still need to be completed for the course rubric.
+- Not covered yet: the Phase 1 monolith baseline, a documented load-balancing proof for 2+ replicas, a written RabbitMQ comparison if required, demo evidence screenshots/logs, and CI/CD pipeline bonus deliverables.
+- Tech note: the repo currently targets .NET 9 in places, while the assignment explicitly asks for a .NET 8 monolith baseline.
+- RabbitMQ decision record: [docs/adr/ADR-2026-07-07-RabbitMQ-EventBus.md](docs/adr/ADR-2026-07-07-RabbitMQ-EventBus.md)
 
 ## Recommended Next Steps
 - Secure `Jwt:SecretKey` and email credentials outside source control

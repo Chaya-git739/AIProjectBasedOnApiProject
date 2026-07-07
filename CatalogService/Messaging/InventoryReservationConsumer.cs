@@ -211,6 +211,13 @@ public sealed class InventoryReservationConsumer : BackgroundService
             ContentType = "application/json"
         };
 
+        props.MessageId = payload.MessageId;
+        props.CorrelationId = payload.CorrelationId;
+        props.Headers = new Dictionary<string, object?>
+        {
+            ["x-correlation-id"] = payload.CorrelationId
+        };
+
         await channel.BasicPublishAsync("raffle.events", routingKey, false, props, data, ct);
     }
 
@@ -221,6 +228,13 @@ public sealed class InventoryReservationConsumer : BackgroundService
         {
             DeliveryMode = DeliveryModes.Persistent,
             ContentType = "application/json"
+        };
+
+        props.MessageId = payload.MessageId;
+        props.CorrelationId = payload.CorrelationId;
+        props.Headers = new Dictionary<string, object?>
+        {
+            ["x-correlation-id"] = payload.CorrelationId
         };
 
         await channel.BasicPublishAsync("raffle.events", routingKey, false, props, data, ct);

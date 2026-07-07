@@ -59,7 +59,8 @@ namespace OrderService.Services
 
             const string correlationHeader = "x-correlation-id";
             var correlationId = _httpContextAccessor.HttpContext?.Request.Headers[correlationHeader].FirstOrDefault()
-                ?? string.Empty;
+                ?? _httpContextAccessor.HttpContext?.TraceIdentifier
+                ?? Guid.NewGuid().ToString();
 
             var evt = new OrderPlacedEvent
             {

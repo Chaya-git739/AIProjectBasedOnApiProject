@@ -209,6 +209,21 @@ public sealed class InventoryReservedConsumer : BackgroundService
             }
         };
 
+        if (JsonSerializer.Deserialize<Dictionary<string, object?>>(body) is { } payload &&
+            payload.TryGetValue("CorrelationId", out var correlationId) &&
+            correlationId != null)
+        {
+            props.CorrelationId = correlationId.ToString();
+            props.Headers["x-correlation-id"] = correlationId.ToString();
+        }
+
+        if (JsonSerializer.Deserialize<Dictionary<string, object?>>(body) is { } retryPayload &&
+            retryPayload.TryGetValue("MessageId", out var messageId) &&
+            messageId != null)
+        {
+            props.MessageId = messageId.ToString();
+        }
+
         var bytes = Encoding.UTF8.GetBytes(body);
         await channel.BasicPublishAsync("raffle.events", routingKey, false, props, bytes, ct);
     }

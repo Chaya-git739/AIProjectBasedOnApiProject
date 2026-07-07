@@ -35,11 +35,7 @@ public sealed class RabbitMqPublisher : IRabbitMqPublisher
             cancellationToken: cancellationToken);
 
         var body = JsonSerializer.SerializeToUtf8Bytes(payload);
-        var properties = new BasicProperties
-        {
-            DeliveryMode = DeliveryModes.Persistent,
-            ContentType = "application/json"
-        };
+        var properties = CreateBasicProperties(payload);
 
         await channel.BasicPublishAsync(
             exchange: "raffle.events",
@@ -50,5 +46,34 @@ public sealed class RabbitMqPublisher : IRabbitMqPublisher
             cancellationToken: cancellationToken);
 
         _logger.LogInformation("Published event with routing key {RoutingKey}", routingKey);
+    }
+
+    private static BasicProperties CreateBasicProperties<T>(T payload)
+    {
+        var properties = new BasicProperties
+        {
+            DeliveryMode = DeliveryModes.Persistent,
+            ContentType = "application/json"
+        };
+
+        var payloadType = typeof(T);
+        var messageIdProperty = payloadType.GetProperty("MessageId");
+        var correlationIdProperty = payloadType.GetProperty("CorrelationId");
+
+        var messageId = messageIdProperty?.GetValue(payload)?.ToString();
+        if (!string.IsNullOrWhiteSpace(messageId))
+        {
+            properties.MessageId = messageId;
+        }
+
+        var correlationId = correlationIdProperty?.GetValue(payload)?.ToString();
+        if (!string.IsNullOrWhiteSpace(correlationId))
+        {
+            properties.CorrelationId = correlationId;
+            properties.Headers ??= new Dictionary<string, object?>();
+            properties.Headers["x-correlation-id"] = correlationId;
+        }
+
+        return properties;
     }
 }
