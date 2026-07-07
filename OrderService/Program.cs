@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using OrderService.Data;
+using OrderService.Messaging;
 using OrderService.Services;
 using Serilog;
 using Serilog.Context;
@@ -57,6 +58,9 @@ builder.Services.AddHttpClient<ICatalogServiceClient, CatalogServiceClient>();
 builder.Services.AddScoped<IOrderApplicationService, OrderService.Services.OrderService>();
 builder.Services.AddScoped<IRaffleService, RaffleService>();
 builder.Services.AddScoped<IWinnerService, WinnerService>();
+builder.Services.AddScoped<IRabbitMqPublisher, RabbitMqPublisher>();
+builder.Services.AddSingleton<IProcessedMessageStore, ProcessedMessageStore>();
+builder.Services.AddHostedService<InventoryReservedConsumer>();
 
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer(options =>

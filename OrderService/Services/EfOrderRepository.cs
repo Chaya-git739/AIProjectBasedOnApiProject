@@ -55,6 +55,19 @@ namespace OrderService.Services
             return true;
         }
 
+        public async Task<bool> CancelOrderAsync(int orderId)
+        {
+            var order = await _context.Orders.FindAsync(orderId);
+            if (order == null)
+            {
+                return false;
+            }
+
+            order.IsDraft = true;
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
         public async Task AddItemToOrderAsync(int orderId, int giftId, int quantity)
         {
             var order = await _context.Orders

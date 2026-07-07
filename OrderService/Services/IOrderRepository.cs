@@ -9,6 +9,7 @@ namespace OrderService.Services
         Task<List<OrderModel>> GetUserOrdersAsync(int userId);
         Task<OrderModel?> GetOrderByIdAsync(int orderId);
         Task<bool> ConfirmOrderAsync(int orderId);
+        Task<bool> CancelOrderAsync(int orderId);
         Task AddItemToOrderAsync(int orderId, int giftId, int quantity);
         Task<bool> RemoveItemAsync(int orderId, int giftId);
         Task<List<(int UserId, int Quantity)>> GetRafflePoolAsync(int giftId);
