@@ -156,6 +156,7 @@ Key configuration values are in `WebApplication2/appsettings.json`:
 - Not covered yet: the Phase 1 monolith baseline, a documented load-balancing proof for 2+ replicas, a written RabbitMQ comparison if required, demo evidence screenshots/logs, and CI/CD pipeline bonus deliverables.
 - Tech note: the repo currently targets .NET 9 in places, while the assignment explicitly asks for a .NET 8 monolith baseline.
 - RabbitMQ decision record: [docs/adr/ADR-2026-07-07-RabbitMQ-EventBus.md](docs/adr/ADR-2026-07-07-RabbitMQ-EventBus.md)
+- Architecture document: [docs/ARCHITECTURE_DOCUMENT.md](docs/ARCHITECTURE_DOCUMENT.md)
 
 ## Recommended Next Steps
 - Secure `Jwt:SecretKey` and email credentials outside source control
