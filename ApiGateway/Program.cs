@@ -18,11 +18,25 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 builder.Services
     .AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
 
 var app = builder.Build();
+
+app.UseSwagger();
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "ApiGateway");
+    options.SwaggerEndpoint("/auth/swagger/v1/swagger.json", "AuthenticationService");
+    options.SwaggerEndpoint("/orders/swagger/v1/swagger.json", "OrderService");
+    options.SwaggerEndpoint("/catalog/swagger/v1/swagger.json", "CatalogService");
+    options.SwaggerEndpoint("/notification/swagger/v1/swagger.json", "NotificationService");
+    options.RoutePrefix = "swagger";
+});
 
 app.Use(async (context, next) =>
 {
