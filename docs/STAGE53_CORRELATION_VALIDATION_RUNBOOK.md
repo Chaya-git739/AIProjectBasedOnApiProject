@@ -62,9 +62,43 @@ Expected:
 Pass criteria:
 - Same `CorrelationId` appears in logs across involved services.
 
+## 6.1) Full saga trace example
+Use a checkout request so the correlation ID crosses HTTP and RabbitMQ, not only a read request.
+
+Example request:
+```powershell
+curl.exe -X POST "http://localhost:5005/orders/api/order/checkout" ^
+  -H "Content-Type: application/json" ^
+  -H "Authorization: Bearer <token>" ^
+  -H "x-correlation-id: saga-order-1001" ^
+  -d "{\"orderItems\":[{\"giftId\":1,\"quantity\":1}],\"isDraft\":false}"
+```
+
+Then filter Seq with:
+- `CorrelationId = 'saga-order-1001'`
+
+Expected trace for a successful saga:
+- ApiGateway request log with `CorrelationId=saga-order-1001`
+- OrderService log: `OrderPlaced event published for order 1001`
+- CatalogService log: `[Saga] Received OrderPlaced for OrderId=1001 CorrelationId=saga-order-1001`
+- CatalogService log: `[Saga] Published inventory.reserved for OrderId=1001`
+- OrderService log: `[Saga] Received inventory result for OrderId=1001 Success=True CorrelationId=saga-order-1001`
+- OrderService log: `[Saga] Order confirmed for OrderId=1001`
+- OrderService log: `[Saga] Published order.status-changed for OrderId=1001 Status=Confirmed`
+- NotificationService log: `[Saga] Handling order.status-changed for OrderId=1001 Status=Confirmed CorrelationId=saga-order-1001`
+- NotificationService log: `[Saga] Notification sent for OrderId=1001 Status=Confirmed`
+
+Broker validation expectation:
+- The RabbitMQ messages for `order.placed`, `inventory.reserved`, and `order.status-changed` must carry `properties.correlationId = saga-order-1001` and header `x-correlation-id = saga-order-1001`.
+
+Pass criteria:
+- One value, `saga-order-1001`, is visible in every service involved in the saga.
+- The same value is preserved in RabbitMQ message metadata between publish and consume steps.
+
 ## 7) Evidence to capture for submission
 - `docker compose ps` showing healthy services.
 - HTTP headers from Step 3 and Step 4.
+- Seq screenshot showing the full successful checkout saga filtered by one correlation ID.
 - Seq screenshot showing same `CorrelationId` across multiple services.
 
 ## 8) Teardown (optional)

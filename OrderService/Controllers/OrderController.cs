@@ -86,20 +86,6 @@ namespace OrderService.Controllers
             }
         }
 
-        [HttpGet("{orderId:int}")]
-        public async Task<IActionResult> GetById(int orderId)
-        {
-            try
-            {
-                var order = await _orderBll.GetOrderByIdAsync(orderId);
-                return order == null ? NotFound("הזמנה לא נמצאה") : Ok(order);
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, "אירעה שגיאה בטעינת ההזמנה");
-            }
-        }
-
         [HttpGet("user/history")]
         public async Task<IActionResult> GetUserOrderHistory()
         {
@@ -146,11 +132,6 @@ namespace OrderService.Controllers
         [Authorize]
         public async Task<IActionResult> AddItemToOrder(int orderId, [FromBody] AddItemRequest request)
         {
-            if (!ModelState.IsValid)
-            {
-                return ValidationProblem(ModelState);
-            }
-
             try
             {
                 await _orderBll.AddItemToOrderAsync(orderId, request.GiftId, request.Quantity);

@@ -116,6 +116,16 @@ Every service uses structured logging and exposes `/health`. The root `docker-co
 
 Correlation IDs are propagated from the gateway to the downstream services and across the message broker. The same ID appears in logs and message metadata so a single order can be traced through the full saga.
 
+Example traced saga with one correlation ID:
+
+- Client sends `POST /orders/api/order/checkout` through the gateway with header `x-correlation-id: saga-order-1001`.
+- ApiGateway keeps `saga-order-1001` on the request, sets it as the response header, and pushes `CorrelationId=saga-order-1001` into structured logs.
+- OrderService persists the order, publishes `order.placed`, and the RabbitMQ message metadata carries `CorrelationId=saga-order-1001` and header `x-correlation-id=saga-order-1001`.
+- CatalogService consumes `order.placed`, logs `Received OrderPlaced for OrderId=1001 CorrelationId=saga-order-1001`, evaluates inventory, and publishes either `inventory.reserved` or `inventory.rejected` with the same correlation ID in broker metadata.
+- OrderService consumes the inventory result, logs `Received inventory result for OrderId=1001 Success=True CorrelationId=saga-order-1001`, updates order state, and publishes `order.status-changed` with the same correlation ID.
+- NotificationService consumes `order.status-changed` and logs `Handling order.status-changed for OrderId=1001 Status=Confirmed CorrelationId=saga-order-1001`.
+- In Seq, filtering by `CorrelationId = 'saga-order-1001'` shows the same request flowing through gateway, OrderService, CatalogService, and NotificationService with the same ID across HTTP and RabbitMQ hops.
+
 ## 9. Consistency Model and Tradeoffs
 
 The final architecture is not strongly consistent across services. Instead, it relies on:
